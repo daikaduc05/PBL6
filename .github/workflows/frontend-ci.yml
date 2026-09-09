@@ -1,0 +1,240 @@
+name: Frontend CI
+
+# Gate order is deliberate:
+#
+#   detect -> typecheck -> quality -> test -> build -> docker
+#
+# typecheck runs first and alone because `tsc --noEmit` is the cheapest way to
+# catch the most common breakage: a renamed backend field. `next build` also
+# type-checks, but it takes far longer to tell you.
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "Frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+  pull_request:
+    paths:
+      - "Frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # The Frontend project is not scaffolded yet. Skip cleanly until it is; every
+  # gate below turns on by itself once Frontend/package.json lands.
+  # ---------------------------------------------------------------------------
+  detect:
+    name: Detect project
+    runs-on: ubuntu-latest
+    outputs:
+      scaffolded: ${{ steps.check.outputs.scaffolded }}
+      has_dockerfile: ${{ steps.check.outputs.has_dockerfile }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: check
+        shell: bash
+        run: |
+          if [ ! -f Frontend/package.json ]; then
+            echo "scaffolded=false" >> "$GITHUB_OUTPUT"
+            echo "has_dockerfile=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Frontend not scaffolded::No Frontend/package.json yet - skipping checks."
+            exit 0
+          fi
+
+          if [ ! -f Frontend/package-lock.json ]; then
+            echo "::error title=Missing lockfile::Frontend/package.json exists but package-lock.json is not committed. Run 'npm install' and commit the lockfile - CI needs it for reproducible installs."
+            exit 1
+          fi
+
+          echo "scaffolded=true" >> "$GITHUB_OUTPUT"
+          if [ -f Frontend/Dockerfile ]; then
+            echo "has_dockerfile=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_dockerfile=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ---------------------------------------------------------------------------
+  # 1. Compile errors. The fastest signal, so it runs on its own first.
+  # ---------------------------------------------------------------------------
+  typecheck:
+    name: Typecheck
+    needs: detect
+    if: needs.detect.outputs.scaffolded == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Install
+        working-directory: Frontend
+        run: npm ci
+
+      - name: tsc --noEmit
+        working-directory: Frontend
+        run: npx tsc --noEmit
+
+  # ---------------------------------------------------------------------------
+  # 2. Lint and formatting.
+  # ---------------------------------------------------------------------------
+  quality:
+    name: Lint / Format
+    needs: [detect, typecheck]
+    if: needs.detect.outputs.scaffolded == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Install
+        working-directory: Frontend
+        run: npm ci
+
+      - name: ESLint
+        working-directory: Frontend
+        run: npx eslint . --max-warnings=0
+
+      - name: Prettier
+        working-directory: Frontend
+        run: npx prettier --check .
+
+  # ---------------------------------------------------------------------------
+  # 3. Unit tests.
+  # ---------------------------------------------------------------------------
+  test:
+    name: Tests
+    needs: [detect, typecheck]
+    if: needs.detect.outputs.scaffolded == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Install
+        working-directory: Frontend
+        run: npm ci
+
+      - name: Vitest
+        working-directory: Frontend
+        run: npx vitest run --passWithNoTests --coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: Frontend/coverage/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # 4. Production build. Catches anything the type checker cannot: bad imports,
+  #    Server/Client Component boundary violations, missing env vars at build time.
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build
+    needs: [detect, quality, test]
+    if: needs.detect.outputs.scaffolded == 'true'
+    runs-on: ubuntu-latest
+    env:
+      # Build-time placeholders. Real values are injected at deploy time.
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8080/api/v1
+      NEXT_PUBLIC_CDN_BASE_URL: https://cdn.example.com
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Install
+        working-directory: Frontend
+        run: npm ci
+
+      - name: Restore Next.js cache
+        uses: actions/cache@v4
+        with:
+          path: Frontend/.next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('Frontend/package-lock.json') }}-${{ hashFiles('Frontend/src/**') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('Frontend/package-lock.json') }}-
+
+      - name: next build
+        working-directory: Frontend
+        run: npm run build
+
+  # ---------------------------------------------------------------------------
+  # 5. Image build. Not pushed on pull requests.
+  # ---------------------------------------------------------------------------
+  docker:
+    name: Docker
+    needs: [detect, build]
+    if: needs.detect.outputs.scaffolded == 'true' && needs.detect.outputs.has_dockerfile == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: Frontend
+          file: Frontend/Dockerfile
+          push: false
+          load: false
+          tags: pbl6/frontend:${{ github.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+  # ---------------------------------------------------------------------------
+  # Single required status check for branch protection.
+  # ---------------------------------------------------------------------------
+  frontend-ci:
+    name: Frontend CI
+    if: always()
+    needs: [detect, typecheck, quality, test, build, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify no job failed
+        shell: bash
+        run: |
+          results='${{ join(needs.*.result, ' ') }}'
+          echo "Job results: $results"
+          for r in $results; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              echo "::error::A required Frontend CI job did not pass."
+              exit 1
+            fi
+          done
+          echo "Frontend CI passed."

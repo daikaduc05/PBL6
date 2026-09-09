@@ -1,0 +1,265 @@
+name: Backend CI
+
+# Gate order is deliberate: the cheapest check that can catch the most common
+# breakage runs first. A syntax error should fail in ~10s, not after a full
+# dependency install.
+#
+#   detect -> syntax -> quality -> test -> docker
+#
+# CD to the VPS (task T06) is intentionally not here yet. Add it as a separate
+# workflow once staging secrets exist.
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "Backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "Backend/**"
+      - ".github/workflows/backend-ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # The Backend project is not scaffolded yet. Rather than fail red on every
+  # push until it is, detect what exists and skip the rest cleanly. Once
+  # Backend/pyproject.toml lands (task T01), every gate below turns on by itself.
+  # ---------------------------------------------------------------------------
+  detect:
+    name: Detect project
+    runs-on: ubuntu-latest
+    outputs:
+      scaffolded: ${{ steps.check.outputs.scaffolded }}
+      services: ${{ steps.check.outputs.services }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: check
+        shell: bash
+        run: |
+          if [ -f Backend/pyproject.toml ]; then
+            echo "scaffolded=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "scaffolded=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Backend not scaffolded::No Backend/pyproject.toml yet - skipping checks. They enable automatically once the monorepo is created (task T01)."
+          fi
+
+          # Build the docker matrix from whichever services actually have a Dockerfile.
+          services='[]'
+          if [ -d Backend/services ]; then
+            found=$(find Backend/services -mindepth 2 -maxdepth 2 -name Dockerfile -printf '%h\n' \
+                    | xargs -r -n1 basename | sort -u | jq -R . | jq -sc .)
+            if [ -n "$found" ]; then services="$found"; fi
+          fi
+          echo "services=$services" >> "$GITHUB_OUTPUT"
+          echo "Docker matrix: $services"
+
+  # ---------------------------------------------------------------------------
+  # 1. Syntax. Pure bytecode compile, no dependencies installed. Catches typos,
+  #    bad indentation and unclosed brackets in seconds.
+  # ---------------------------------------------------------------------------
+  syntax:
+    name: Syntax
+    needs: detect
+    if: needs.detect.outputs.scaffolded == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Compile all sources
+        working-directory: Backend
+        run: python -m compileall -q services libs
+
+  # ---------------------------------------------------------------------------
+  # 2. Lint, format and static types.
+  # ---------------------------------------------------------------------------
+  quality:
+    name: Lint / Format / Types
+    needs: [detect, syntax]
+    if: needs.detect.outputs.scaffolded == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "Backend/uv.lock"
+
+      - name: Install dependencies
+        working-directory: Backend
+        run: uv sync --all-packages --dev
+
+      - name: Ruff lint
+        working-directory: Backend
+        run: uv run ruff check --output-format=github .
+
+      - name: Ruff format check
+        working-directory: Backend
+        run: uv run ruff format --check .
+
+      - name: mypy
+        working-directory: Backend
+        run: uv run mypy services libs
+
+  # ---------------------------------------------------------------------------
+  # 3. Tests, against real PostgreSQL and RabbitMQ service containers.
+  # ---------------------------------------------------------------------------
+  test:
+    name: Tests
+    needs: [detect, syntax]
+    if: needs.detect.outputs.scaffolded == 'true'
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pbl6
+          POSTGRES_PASSWORD: pbl6
+          POSTGRES_DB: pbl6_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U pbl6"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:3.13-alpine
+        ports: ["5672:5672"]
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ENV: test
+      DATABASE_URL: postgresql+asyncpg://pbl6:pbl6@localhost:5432/pbl6_test
+      RABBITMQ_URL: amqp://guest:guest@localhost:5672/
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SECRET: test-secret-not-used-anywhere-real
+      JWT_ALGORITHM: HS256
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "Backend/uv.lock"
+
+      - name: Install dependencies
+        working-directory: Backend
+        run: uv sync --all-packages --dev
+
+      - name: pytest
+        working-directory: Backend
+        shell: bash
+        run: |
+          code=0
+          uv run pytest \
+            --cov=services --cov=libs \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            -q || code=$?
+          # exit 5 = pytest collected no tests. Expected early in the project.
+          if [ "$code" -eq 5 ]; then
+            echo "::warning title=No tests::pytest collected no tests yet."
+            exit 0
+          fi
+          exit "$code"
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: Backend/coverage.xml
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # 4. Every service image must build. Not pushed on pull requests.
+  # ---------------------------------------------------------------------------
+  docker:
+    name: Docker (${{ matrix.service }})
+    needs: [detect, quality, test]
+    if: needs.detect.outputs.scaffolded == 'true' && needs.detect.outputs.services != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.detect.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.service }}
+        uses: docker/build-push-action@v6
+        with:
+          context: Backend
+          file: Backend/services/${{ matrix.service }}/Dockerfile
+          push: false
+          load: false
+          tags: pbl6/${{ matrix.service }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+
+  # ---------------------------------------------------------------------------
+  # Single required status check. Set this as the branch protection rule so the
+  # rule does not need editing whenever a job is added or the matrix changes.
+  # ---------------------------------------------------------------------------
+  backend-ci:
+    name: Backend CI
+    if: always()
+    needs: [detect, syntax, quality, test, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify no job failed
+        shell: bash
+        run: |
+          results='${{ join(needs.*.result, ' ') }}'
+          echo "Job results: $results"
+          for r in $results; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              echo "::error::A required Backend CI job did not pass."
+              exit 1
+            fi
+          done
+          echo "Backend CI passed."
