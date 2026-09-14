@@ -1,0 +1,112 @@
+/*
+ * Design/tokens.css — Web design tokens (Tailwind CSS v4)
+ *
+ * Source of truth: ../design-system.md. Mirrored for mobile in
+ * tailwind.config.mobile.js — keep both in sync.
+ *
+ * Setup: once the Next.js app exists, either import this file from
+ * Frontend/src/styles/globals.css:
+ *   @import "../../../Design/tokens.css";
+ * or copy its contents to the top of globals.css. Either way this must be
+ * the FIRST thing after `@import "tailwindcss"`.
+ */
+
+@import "tailwindcss";
+
+:root {
+  /* Brand */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f59e0b; /* VIP / reward accent — not a generic CTA color */
+  --secondary-foreground: #1c1917;
+
+  /* Semantic */
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #1c1917;
+  --info: #0284c7;
+  --info-foreground: #ffffff;
+
+  /* Surfaces */
+  --background: #ffffff;
+  --surface: #f8fafc;
+  --surface-2: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --ring: #4f46e5;
+}
+
+.dark {
+  --primary: #818cf8;
+  --primary-hover: #a5b4fc;
+  --primary-foreground: #1e1b4b;
+
+  --secondary: #fbbf24;
+  --secondary-foreground: #1c1917;
+
+  --success: #4ade80;
+  --success-foreground: #052e16;
+  --danger: #f87171;
+  --danger-foreground: #450a0a;
+  --warning: #fbbf24;
+  --warning-foreground: #451a03;
+  --info: #38bdf8;
+  --info-foreground: #082f49;
+
+  --background: #0b1120;
+  --surface: #0f172a;
+  --surface-2: #1e293b;
+  --border: #334155;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --ring: #818cf8;
+}
+
+/* Registers the CSS variables above as Tailwind v4 theme values, so
+   `bg-primary`, `text-text-muted`, `border-border`, `ring-ring`, etc. exist
+   as utilities and flip automatically when the `.dark` class is applied. */
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-ring: var(--ring);
+
+  /* Overrides Tailwind's default radius scale with the design-system values */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --font-sans: "Inter", "Inter Fallback", system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
