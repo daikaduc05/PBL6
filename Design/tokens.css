@@ -36,10 +36,15 @@
   --background: #ffffff;
   --surface: #f8fafc;
   --surface-2: #f1f5f9;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f8fafc;
+  --accent-foreground: #0f172a;
   --border: #e2e8f0;
   --text: #0f172a;
   --text-muted: #64748b;
   --ring: #4f46e5;
+  --ring-offset: #ffffff;
 }
 
 .dark {
@@ -62,10 +67,15 @@
   --background: #0b1120;
   --surface: #0f172a;
   --surface-2: #1e293b;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f1f5f9;
   --border: #334155;
   --text: #f1f5f9;
   --text-muted: #94a3b8;
   --ring: #818cf8;
+  --ring-offset: #0b1120;
 }
 
 /* Registers the CSS variables above as Tailwind v4 theme values, so
@@ -91,16 +101,39 @@
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
   --color-text: var(--text);
   --color-text-muted: var(--text-muted);
   --color-ring: var(--ring);
+  --color-ring-offset: var(--ring-offset);
 
   /* Overrides Tailwind's default radius scale with the design-system values */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-full: 9999px;
+
+  /* Shadows & Elevation */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-primary: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+
+  /* Z-Index */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-backdrop: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+
+  /* Animation & Transition */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
   --font-sans: "Inter", "Inter Fallback", system-ui, sans-serif;
 }
