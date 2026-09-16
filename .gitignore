@@ -1,0 +1,29 @@
+# Env / secrets — never commit (git-flow-convention.md §8)
+.env
+.env.*
+!.env.example
+
+# Node (Frontend, Mobile)
+node_modules/
+.next/
+dist/
+build/
+.expo/
+*.log
+
+# Python (Backend)
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Design canvas exports (large, generated, view-only — not source)
+Design/mockups/

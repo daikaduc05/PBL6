@@ -1,0 +1,145 @@
+/*
+ * Design/tokens.css — Web design tokens (Tailwind CSS v4)
+ *
+ * Source of truth: ../design-system.md. Mirrored for mobile in
+ * tailwind.config.mobile.js — keep both in sync.
+ *
+ * Setup: once the Next.js app exists, either import this file from
+ * Frontend/src/styles/globals.css:
+ *   @import "../../../Design/tokens.css";
+ * or copy its contents to the top of globals.css. Either way this must be
+ * the FIRST thing after `@import "tailwindcss"`.
+ */
+
+@import "tailwindcss";
+
+:root {
+  /* Brand */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f59e0b; /* VIP / reward accent — not a generic CTA color */
+  --secondary-foreground: #1c1917;
+
+  /* Semantic */
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #1c1917;
+  --info: #0284c7;
+  --info-foreground: #ffffff;
+
+  /* Surfaces */
+  --background: #ffffff;
+  --surface: #f8fafc;
+  --surface-2: #f1f5f9;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f8fafc;
+  --accent-foreground: #0f172a;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --ring: #4f46e5;
+  --ring-offset: #ffffff;
+}
+
+.dark {
+  --primary: #818cf8;
+  --primary-hover: #a5b4fc;
+  --primary-foreground: #1e1b4b;
+
+  --secondary: #fbbf24;
+  --secondary-foreground: #1c1917;
+
+  --success: #4ade80;
+  --success-foreground: #052e16;
+  --danger: #f87171;
+  --danger-foreground: #450a0a;
+  --warning: #fbbf24;
+  --warning-foreground: #451a03;
+  --info: #38bdf8;
+  --info-foreground: #082f49;
+
+  --background: #0b1120;
+  --surface: #0f172a;
+  --surface-2: #1e293b;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f1f5f9;
+  --border: #334155;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --ring: #818cf8;
+  --ring-offset: #0b1120;
+}
+
+/* Registers the CSS variables above as Tailwind v4 theme values, so
+   `bg-primary`, `text-text-muted`, `border-border`, `ring-ring`, etc. exist
+   as utilities and flip automatically when the `.dark` class is applied. */
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-ring: var(--ring);
+  --color-ring-offset: var(--ring-offset);
+
+  /* Overrides Tailwind's default radius scale with the design-system values */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows & Elevation */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-primary: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+
+  /* Z-Index */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-backdrop: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+
+  /* Animation & Transition */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  --font-sans: "Inter", "Inter Fallback", system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
