@@ -13,6 +13,9 @@ test:
 dev-account:
 	cd services/account && uv run uvicorn account.main:app --reload --port 8001
 
+dev-content:
+	cd services/content && uv run uvicorn content.main:app --reload --port 8002
+
 # The account.users table on Supabase already exists (created by
 # Backend/db/01_account.sql before Alembic was wired up). Run this once
 # to record that baseline without re-creating the table:
