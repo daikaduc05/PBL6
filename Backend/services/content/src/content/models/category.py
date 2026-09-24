@@ -1,15 +1,17 @@
 import uuid
-
-from sqlalchemy import Column, String, Text
+from sqlalchemy import Column, String, Integer, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base
-
-Base = declarative_base()
+from sqlalchemy.orm import relationship
+from pbl6_common.db import Base
 
 class Category(Base):
     __tablename__ = "categories"
     __table_args__ = {"schema": "content"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    parent_id = Column(UUID(as_uuid=True), ForeignKey("content.categories.id"), nullable=True)
     name = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
+    slug = Column(String, nullable=False, unique=True)
+    sort_order = Column(Integer, default=0)
+
+    children = relationship("Category", backref="parent", remote_side=[id])
