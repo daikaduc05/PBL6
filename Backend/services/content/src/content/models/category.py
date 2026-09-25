@@ -1,8 +1,10 @@
 import uuid
-from sqlalchemy import Column, String, Integer, ForeignKey
+
+from pbl6_common.db import Base
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from pbl6_common.db import Base
+
 
 class Category(Base):
     __tablename__ = "categories"

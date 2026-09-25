@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from content.config import get_settings
-from fastapi import Depends
 from pbl6_common.db import make_engine, make_get_db, make_session_factory
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from content.config import get_settings
 
 settings = get_settings()
 engine = make_engine(settings.database_url)

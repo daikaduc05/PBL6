@@ -1,9 +1,9 @@
 import asyncio
 from logging.config import fileConfig
 
-from content.config import get_settings
-from content.models import *  # noqa: F401 — registers metadata
+import content.models  # noqa: F401
 from alembic import context
+from content.config import get_settings
 from pbl6_common.db import Base, make_engine
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -14,6 +14,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
+
 
 def include_name(name, type_, parent_names):
     if type_ == "schema":

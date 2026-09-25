@@ -1,7 +1,9 @@
 import asyncio
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import text
+
 from content.config import get_settings
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+
 
 async def main():
     engine = create_async_engine(get_settings().database_url)
@@ -14,6 +16,7 @@ async def main():
         await conn.execute(text("DROP TYPE IF EXISTS content.lesson_status_enum CASCADE;"))
         await conn.execute(text("DROP TYPE IF EXISTS content.media_kind_enum CASCADE;"))
     await engine.dispose()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

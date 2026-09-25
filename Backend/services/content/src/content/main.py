@@ -1,8 +1,9 @@
-from content.config import get_settings
-from content.deps import engine
 from fastapi import FastAPI
 from pbl6_common.errors import register_exception_handlers
 from pbl6_common.logging import RequestIdMiddleware, configure_logging
+
+from content.config import get_settings
+from content.deps import engine
 
 
 def create_app() -> FastAPI:
@@ -13,6 +14,7 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     from content.api.v1.categories import router as categories_router
+
     app.include_router(categories_router, prefix="/api/v1")
 
     @app.get("/health")
