@@ -2,10 +2,11 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
-from pbl6_common.deps import require_role
+from pbl6_common.deps import UserContext, get_optional_user, require_role
 from pydantic import BaseModel
 
 from content.deps import get_lesson_service
+from content.models.lesson import LessonAccess
 from content.schemas.lesson import (
     LessonCreate,
     LessonResponse,
@@ -30,14 +31,23 @@ async def list_lessons(
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=100)] = 20,
     service: LessonService = Depends(get_lesson_service),
+    user: UserContext | None = Depends(get_optional_user),
 ):
     offset = (page - 1) * size
     lessons = await service.get_lessons(
         category_id=category_id, level=level, limit=size, offset=offset
     )
+    
+    response_items = []
+    for lesson in lessons:
+        resp = LessonResponse.model_validate(lesson)
+        if resp.access == LessonAccess.VIP and (not user or user.tier != "vip"):
+            resp.body = "Nội dung này dành riêng cho tài khoản VIP. Vui lòng nâng cấp để xem toàn bộ bài học."
+        response_items.append(resp)
+
     # TODO: Tích hợp query đếm tổng số lượng (total) nếu cần, tạm thời để total = len(items)
     return {
-        "items": lessons,
+        "items": response_items,
         "total": len(lessons),
         "page": page,
         "size": size,
@@ -48,14 +58,18 @@ async def list_lessons(
 async def get_lesson(
     lesson_id: uuid.UUID,
     service: LessonService = Depends(get_lesson_service),
+    user: UserContext | None = Depends(get_optional_user),
 ):
-    # TODO: Ở sprint 2 sẽ xử lý cắt teaser đối với public user nếu bài học VIP
     lesson = await service.get_lesson(lesson_id)
     if not lesson:
         from fastapi import HTTPException
-
         raise HTTPException(status_code=404, detail="Không tìm thấy bài học.")
-    return lesson
+        
+    resp = LessonResponse.model_validate(lesson)
+    if resp.access == LessonAccess.VIP and (not user or user.tier != "vip"):
+        resp.body = "Nội dung này dành riêng cho tài khoản VIP. Vui lòng nâng cấp để xem toàn bộ bài học."
+        
+    return resp
 
 
 @router.post(
