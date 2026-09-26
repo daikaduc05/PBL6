@@ -20,9 +20,7 @@ class CategoryService:
 
     def _build_tree(self, categories: list[Category]) -> list[CategoryTreeResponse]:
         category_map = {
-            cat.id: CategoryTreeResponse(
-                **CategoryResponse.model_validate(cat).model_dump()
-            ) 
+            cat.id: CategoryTreeResponse(**CategoryResponse.model_validate(cat).model_dump())
             for cat in categories
         }
 

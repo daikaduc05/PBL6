@@ -37,12 +37,15 @@ async def list_lessons(
     lessons = await service.get_lessons(
         category_id=category_id, level=level, limit=size, offset=offset
     )
-    
+
     response_items = []
     for lesson in lessons:
         resp = LessonResponse.model_validate(lesson)
         if resp.access == LessonAccess.VIP and (not user or user.tier != "vip"):
-            resp.body = "Nội dung này dành riêng cho tài khoản VIP. Vui lòng nâng cấp để xem toàn bộ bài học."
+            resp.body = (
+                "Nội dung này dành riêng cho tài khoản VIP. "
+                "Vui lòng nâng cấp để xem toàn bộ bài học."
+            )
         response_items.append(resp)
 
     # TODO: Tích hợp query đếm tổng số lượng (total) nếu cần, tạm thời để total = len(items)
@@ -63,12 +66,15 @@ async def get_lesson(
     lesson = await service.get_lesson(lesson_id)
     if not lesson:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=404, detail="Không tìm thấy bài học.")
-        
+
     resp = LessonResponse.model_validate(lesson)
     if resp.access == LessonAccess.VIP and (not user or user.tier != "vip"):
-        resp.body = "Nội dung này dành riêng cho tài khoản VIP. Vui lòng nâng cấp để xem toàn bộ bài học."
-        
+        resp.body = (
+            "Nội dung này dành riêng cho tài khoản VIP. Vui lòng nâng cấp để xem toàn bộ bài học."
+        )
+
     return resp
 
 
