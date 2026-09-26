@@ -5,7 +5,6 @@ from content.repositories.category_repository import CategoryRepository
 from content.repositories.lesson_repository import LessonRepository
 from content.schemas.lesson import LessonCreate, LessonUpdate
 from fastapi import HTTPException
-from pbl6_common.events.publisher import EventPublisher
 
 
 class LessonService:
@@ -13,11 +12,12 @@ class LessonService:
         self,
         lesson_repo: LessonRepository,
         category_repo: CategoryRepository,
-        publisher: EventPublisher,
+        # TODO: Add EventPublisher once T04 is implemented
+        # publisher: EventPublisher,
     ):
         self._lesson_repo = lesson_repo
         self._category_repo = category_repo
-        self._publisher = publisher
+        # self._publisher = publisher
 
     async def get_lesson(self, lesson_id: uuid.UUID) -> Lesson | None:
         return await self._lesson_repo.get_by_id(lesson_id)
@@ -96,13 +96,14 @@ class LessonService:
 
         updated = await self._lesson_repo.update(lesson, {"status": LessonStatus.PUBLISHED})
 
-        await self._publisher.publish(
-            "lesson.published",
-            {
-                "lesson_id": str(updated.id),
-                "title": updated.title,
-                "category_id": str(updated.category_id),
-            },
-        )
+        # TODO: Publish event when T04 (RabbitMQ) is implemented
+        # await self._publisher.publish(
+        #     "lesson.published",
+        #     {
+        #         "lesson_id": str(updated.id),
+        #         "title": updated.title,
+        #         "category_id": str(updated.category_id),
+        #     },
+        # )
 
         return updated

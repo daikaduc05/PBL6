@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from fastapi import Depends
 from pbl6_common.db import make_engine, make_get_db, make_session_factory
-from pbl6_common.events.publisher import EventPublisher
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from content.config import get_settings
@@ -17,7 +16,8 @@ settings = get_settings()
 engine = make_engine(settings.database_url)
 _session_factory = make_session_factory(engine)
 get_db = make_get_db(_session_factory)
-_publisher = EventPublisher(settings.rabbitmq_url, "pbl6.events", "content-service")
+# TODO: Uncomment when T04 (RabbitMQ) is implemented
+# _publisher = EventPublisher(settings.rabbitmq_url, "pbl6.events", "content-service")
 
 
 async def get_category_repo(db: AsyncSession = Depends(get_db)) -> CategoryRepository:
@@ -38,4 +38,4 @@ async def get_lesson_service(
     lesson_repo: LessonRepository = Depends(get_lesson_repo),
     category_repo: CategoryRepository = Depends(get_category_repo),
 ) -> LessonService:
-    return LessonService(lesson_repo, category_repo, _publisher)
+    return LessonService(lesson_repo, category_repo)
