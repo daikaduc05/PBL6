@@ -14,8 +14,10 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     from content.api.v1.categories import router as categories_router
+    from content.api.v1.lessons import router as lessons_router
 
     app.include_router(categories_router, prefix="/api/v1")
+    app.include_router(lessons_router, prefix="/api/v1")
 
     @app.get("/health")
     async def health():
