@@ -4,6 +4,7 @@ from content.models.category import Category
 from content.repositories.category_repository import CategoryRepository
 from content.schemas.category import (
     CategoryCreate,
+    CategoryResponse,
     CategoryTreeResponse,
     CategoryUpdate,
 )
@@ -18,7 +19,12 @@ class CategoryService:
         return await self._category_repo.get_by_id(category_id)
 
     def _build_tree(self, categories: list[Category]) -> list[CategoryTreeResponse]:
-        category_map = {cat.id: CategoryTreeResponse.model_validate(cat) for cat in categories}
+        category_map = {
+            cat.id: CategoryTreeResponse(
+                **CategoryResponse.model_validate(cat).model_dump()
+            ) 
+            for cat in categories
+        }
 
         tree = []
         for cat in categories:
