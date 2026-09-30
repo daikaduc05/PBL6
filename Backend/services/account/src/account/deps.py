@@ -8,6 +8,7 @@ from collections.abc import AsyncGenerator
 
 from account.config import get_settings
 from account.repositories.user_repository import UserRepository
+from account.services.admin_user_service import AdminUserService
 from account.services.auth_service import AuthService
 from account.services.user_service import UserService
 from fastapi import Depends
@@ -41,3 +42,7 @@ def get_auth_service(
 
 def get_user_service(session: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(users=UserRepository(session))
+
+
+def get_admin_user_service(session: AsyncSession = Depends(get_db)) -> AdminUserService:
+    return AdminUserService(users=UserRepository(session))
