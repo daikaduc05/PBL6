@@ -32,3 +32,14 @@ class UserRepository:
         """Persists in-place mutations on an already-loaded User (the caller
         mutates attributes on the instance from get_by_id/get_by_email)."""
         await self._session.flush()
+
+    async def list_customers(self, *, page: int, size: int) -> tuple[list[User], int]:
+        """Students only (role=CUSTOMER), excluding soft-deleted rows. Editor
+        accounts have their own management screen — task T24."""
+        base = select(User).where(User.role == "CUSTOMER", User.deleted_at.is_(None))
+
+        total = await self._session.scalar(select(func.count()).select_from(base.subquery()))
+
+        stmt = base.order_by(User.created_at.desc()).offset((page - 1) * size).limit(size)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all()), total or 0
