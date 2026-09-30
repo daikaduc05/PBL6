@@ -1,4 +1,5 @@
 from account.api.v1.auth import router as auth_router
+from account.api.v1.users import router as users_router
 from account.config import get_settings
 from account.deps import engine
 from fastapi import FastAPI
@@ -14,6 +15,7 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(auth_router, prefix="/api/v1")
+    app.include_router(users_router, prefix="/api/v1")
 
     @app.get("/health")
     async def health():

@@ -27,3 +27,8 @@ class UserRepository:
         self._session.add(user)
         await self._session.flush()
         return user
+
+    async def save(self, user: User) -> None:
+        """Persists in-place mutations on an already-loaded User (the caller
+        mutates attributes on the instance from get_by_id/get_by_email)."""
+        await self._session.flush()
