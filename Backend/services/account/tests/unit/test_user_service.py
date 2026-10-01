@@ -5,34 +5,10 @@ from __future__ import annotations
 import uuid
 
 import pytest
-from account.models.user import User
 from account.services.user_service import UserService
+from fakes import FakeUserRepository
 from pbl6_common.errors import NotFoundError, UnauthorizedError
 from pbl6_common.security import hash_password
-
-
-class FakeUserRepository:
-    def __init__(self):
-        self._by_id: dict[uuid.UUID, User] = {}
-
-    async def get_by_id(self, user_id: uuid.UUID) -> User | None:
-        return self._by_id.get(user_id)
-
-    async def save(self, user: User) -> None:
-        self._by_id[user.id] = user
-
-    def seed(self, **kwargs) -> User:
-        user = User(
-            id=uuid.uuid4(),
-            email=kwargs.pop("email", "a@b.com"),
-            password_hash=kwargs.pop("password_hash", hash_password("password123")),
-            full_name=kwargs.pop("full_name", "A B"),
-            role=kwargs.pop("role", "CUSTOMER"),
-            status=kwargs.pop("status", "ACTIVE"),
-            is_vip=kwargs.pop("is_vip", False),
-        )
-        self._by_id[user.id] = user
-        return user
 
 
 def make_service() -> tuple[UserService, FakeUserRepository]:

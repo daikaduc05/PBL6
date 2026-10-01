@@ -29,3 +29,9 @@ ignore = ["B008"]
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
+# Every service's alembic/env.py has the same name and no shared package
+# root (each service is its own project), so mypy sees two modules both
+# called "env" the moment a second service gets a migration history —
+# excluded rather than renamed, since the alembic CLI expects this exact
+# layout and these scripts are boilerplate.
+exclude = ["alembic/"]

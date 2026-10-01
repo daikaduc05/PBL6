@@ -2,79 +2,13 @@
 
 from __future__ import annotations
 
-import uuid
 from datetime import UTC, datetime
 
 import pytest
-from account.models.user import User
 from account.services.admin_editor_service import AdminEditorService
+from fakes import FakeUserRepository
 from pbl6_common.errors import ConflictError, NotFoundError
 from pbl6_common.security import verify_password
-
-
-class FakeUserRepository:
-    def __init__(self):
-        self._by_id: dict[uuid.UUID, User] = {}
-
-    async def get_by_email(self, email: str) -> User | None:
-        return next((u for u in self._by_id.values() if u.email.lower() == email.lower()), None)
-
-    async def get_by_id(self, user_id: uuid.UUID) -> User | None:
-        return self._by_id.get(user_id)
-
-    async def create(
-        self, *, email: str, password_hash: str, full_name: str, role: str = "CUSTOMER"
-    ) -> User:
-        user = User(
-            id=uuid.uuid4(),
-            email=email,
-            password_hash=password_hash,
-            full_name=full_name,
-            role=role,
-            status="ACTIVE",
-            is_vip=False,
-            created_at=datetime.now(UTC),
-        )
-        self._by_id[user.id] = user
-        return user
-
-    async def save(self, user: User) -> None:
-        self._by_id[user.id] = user
-
-    async def list_by_role(
-        self,
-        *,
-        role: str,
-        page: int,
-        size: int,
-        status: str | None = None,
-        q: str | None = None,
-    ) -> tuple[list[User], int]:
-        matches = [u for u in self._by_id.values() if u.role == role and not u.deleted_at]
-        if status is not None:
-            matches = [u for u in matches if u.status == status]
-        if q:
-            needle = q.lower()
-            matches = [
-                u for u in matches if needle in u.full_name.lower() or needle in u.email.lower()
-            ]
-        matches.sort(key=lambda u: u.created_at, reverse=True)
-        start = (page - 1) * size
-        return matches[start : start + size], len(matches)
-
-    def seed(self, **kwargs) -> User:
-        user = User(
-            id=uuid.uuid4(),
-            email=kwargs.pop("email", f"{uuid.uuid4()}@vidu.com"),
-            password_hash=kwargs.pop("password_hash", "x"),
-            full_name=kwargs.pop("full_name", "A B"),
-            role=kwargs.pop("role", "CUSTOMER"),
-            status=kwargs.pop("status", "ACTIVE"),
-            is_vip=kwargs.pop("is_vip", False),
-            created_at=kwargs.pop("created_at", datetime.now(UTC)),
-        )
-        self._by_id[user.id] = user
-        return user
 
 
 def make_service() -> tuple[AdminEditorService, FakeUserRepository]:

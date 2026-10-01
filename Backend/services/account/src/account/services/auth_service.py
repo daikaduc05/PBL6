@@ -7,14 +7,10 @@ there is no refresh_tokens table.
 
 from __future__ import annotations
 
-from account.config import AccountSettings
-from account.models.user import User
-from account.repositories.user_repository import UserRepository
-from account.schemas.auth import TokenPairResponse
 from pbl6_common.errors import ConflictError, UnauthorizedError
 from pbl6_common.security import (
     InvalidTokenError,
-    RefreshTokenDenylist,
+    RefreshTokenDenylistProtocol,
     create_access_token,
     create_refresh_token,
     decode_token,
@@ -23,12 +19,17 @@ from pbl6_common.security import (
     verify_password,
 )
 
+from account.config import AccountSettings
+from account.models.user import User
+from account.repositories.protocols import UserRepositoryProtocol
+from account.schemas.auth import TokenPairResponse
+
 
 class AuthService:
     def __init__(
         self,
-        users: UserRepository,
-        denylist: RefreshTokenDenylist,
+        users: UserRepositoryProtocol,
+        denylist: RefreshTokenDenylistProtocol,
         settings: AccountSettings,
     ):
         self._users = users
