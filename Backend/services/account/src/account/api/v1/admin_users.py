@@ -1,6 +1,7 @@
 """T23 — HTTP layer only, no business logic (backend.md §3 layering rule).
 
     GET    /api/v1/admin/users                 admin  — list students, paginated
+                                                         ?status=&q= to filter/search (T25)
     GET    /api/v1/admin/users/{id}             admin  — one student
     PATCH  /api/v1/admin/users/{id}             admin  — edit full_name
     PATCH  /api/v1/admin/users/{id}/status      admin  — ACTIVE / INACTIVE / LOCKED
@@ -13,6 +14,7 @@
 """
 
 import uuid
+from typing import Literal
 
 from account.deps import get_admin_user_service
 from account.schemas.admin import (
@@ -35,10 +37,14 @@ _require_admin = require_role("ADMIN")
 async def list_students(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
+    status_filter: Literal["ACTIVE", "INACTIVE", "LOCKED"] | None = Query(
+        default=None, alias="status"
+    ),
+    q: str | None = Query(default=None, min_length=1, max_length=200),
     _: UserContext = Depends(_require_admin),
     svc: AdminUserService = Depends(get_admin_user_service),
 ):
-    items, total = await svc.list_students(page=page, size=size)
+    items, total = await svc.list_students(page=page, size=size, status=status_filter, q=q)
     return Paginated(items=list(items), total=total, page=page, size=size)
 
 

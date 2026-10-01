@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 
 from account.models.user import User
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -35,11 +35,31 @@ class UserRepository:
         mutates attributes on the instance from get_by_id/get_by_email)."""
         await self._session.flush()
 
-    async def list_by_role(self, *, role: str, page: int, size: int) -> tuple[list[User], int]:
+    async def list_by_role(
+        self,
+        *,
+        role: str,
+        page: int,
+        size: int,
+        status: str | None = None,
+        q: str | None = None,
+    ) -> tuple[list[User], int]:
         """Excludes soft-deleted rows. Shared by the student (T23) and editor
         (T24) admin screens — each only ever passes its own role, so neither
-        can see or touch the other's accounts."""
-        base = select(User).where(User.role == role, User.deleted_at.is_(None))
+        can see or touch the other's accounts.
+
+        T25: `status` filters exactly; `q` matches full_name or email,
+        case-insensitive, substring (ILIKE)."""
+        conditions = [User.role == role, User.deleted_at.is_(None)]
+        if status is not None:
+            conditions.append(User.status == status)
+        if q:
+            pattern = f"%{q.lower()}%"
+            conditions.append(
+                or_(func.lower(User.full_name).like(pattern), func.lower(User.email).like(pattern))
+            )
+
+        base = select(User).where(*conditions)
 
         total = await self._session.scalar(select(func.count()).select_from(base.subquery()))
 
