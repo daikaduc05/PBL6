@@ -20,7 +20,7 @@ class AdminUserService:
         self._users = users
 
     async def list_students(self, *, page: int, size: int) -> tuple[list[User], int]:
-        return await self._users.list_customers(page=page, size=size)
+        return await self._users.list_by_role(role="CUSTOMER", page=page, size=size)
 
     async def get_student(self, user_id: uuid.UUID) -> User:
         user = await self._users.get_by_id(user_id)

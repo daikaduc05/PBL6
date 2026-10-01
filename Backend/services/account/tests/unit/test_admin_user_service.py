@@ -21,11 +21,11 @@ class FakeUserRepository:
     async def save(self, user: User) -> None:
         self._by_id[user.id] = user
 
-    async def list_customers(self, *, page: int, size: int) -> tuple[list[User], int]:
-        customers = [u for u in self._by_id.values() if u.role == "CUSTOMER" and not u.deleted_at]
-        customers.sort(key=lambda u: u.created_at, reverse=True)
+    async def list_by_role(self, *, role: str, page: int, size: int) -> tuple[list[User], int]:
+        matches = [u for u in self._by_id.values() if u.role == role and not u.deleted_at]
+        matches.sort(key=lambda u: u.created_at, reverse=True)
         start = (page - 1) * size
-        return customers[start : start + size], len(customers)
+        return matches[start : start + size], len(matches)
 
     def seed(self, **kwargs) -> User:
         user = User(

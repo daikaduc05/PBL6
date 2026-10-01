@@ -16,8 +16,8 @@ import uuid
 
 from account.deps import get_admin_user_service
 from account.schemas.admin import (
+    UpdateStatusRequest,
     UpdateStudentRequest,
-    UpdateStudentStatusRequest,
     UpdateStudentVipRequest,
 )
 from account.schemas.user import UserProfileResponse
@@ -64,7 +64,7 @@ async def update_student(
 @router.patch("/{user_id}/status", response_model=UserProfileResponse)
 async def update_student_status(
     user_id: uuid.UUID,
-    body: UpdateStudentStatusRequest,
+    body: UpdateStatusRequest,
     _: UserContext = Depends(_require_admin),
     svc: AdminUserService = Depends(get_admin_user_service),
 ):

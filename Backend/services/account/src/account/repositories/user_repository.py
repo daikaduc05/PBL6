@@ -22,8 +22,10 @@ class UserRepository:
     async def get_by_id(self, user_id: uuid.UUID) -> User | None:
         return await self._session.get(User, user_id)
 
-    async def create(self, *, email: str, password_hash: str, full_name: str) -> User:
-        user = User(email=email, password_hash=password_hash, full_name=full_name)
+    async def create(
+        self, *, email: str, password_hash: str, full_name: str, role: str = "CUSTOMER"
+    ) -> User:
+        user = User(email=email, password_hash=password_hash, full_name=full_name, role=role)
         self._session.add(user)
         await self._session.flush()
         return user
@@ -33,10 +35,11 @@ class UserRepository:
         mutates attributes on the instance from get_by_id/get_by_email)."""
         await self._session.flush()
 
-    async def list_customers(self, *, page: int, size: int) -> tuple[list[User], int]:
-        """Students only (role=CUSTOMER), excluding soft-deleted rows. Editor
-        accounts have their own management screen — task T24."""
-        base = select(User).where(User.role == "CUSTOMER", User.deleted_at.is_(None))
+    async def list_by_role(self, *, role: str, page: int, size: int) -> tuple[list[User], int]:
+        """Excludes soft-deleted rows. Shared by the student (T23) and editor
+        (T24) admin screens — each only ever passes its own role, so neither
+        can see or touch the other's accounts."""
+        base = select(User).where(User.role == role, User.deleted_at.is_(None))
 
         total = await self._session.scalar(select(func.count()).select_from(base.subquery()))
 
