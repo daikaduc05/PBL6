@@ -6,17 +6,18 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 
+from fastapi import Depends
+from pbl6_common.db import make_engine, make_get_db, make_session_factory
+from pbl6_common.security import RefreshTokenDenylist
+from redis.asyncio import Redis, from_url
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from account.config import get_settings
 from account.repositories.user_repository import UserRepository
 from account.services.admin_editor_service import AdminEditorService
 from account.services.admin_user_service import AdminUserService
 from account.services.auth_service import AuthService
 from account.services.user_service import UserService
-from fastapi import Depends
-from pbl6_common.db import make_engine, make_get_db, make_session_factory
-from pbl6_common.security import RefreshTokenDenylist
-from redis.asyncio import Redis, from_url
-from sqlalchemy.ext.asyncio import AsyncSession
 
 settings = get_settings()
 engine = make_engine(settings.database_url)

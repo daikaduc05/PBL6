@@ -16,6 +16,10 @@
 import uuid
 from typing import Literal
 
+from fastapi import APIRouter, Depends, Query, status
+from pbl6_common.deps import UserContext, require_role
+from pbl6_common.pagination import Paginated
+
 from account.deps import get_admin_user_service
 from account.schemas.admin import (
     UpdateStatusRequest,
@@ -24,9 +28,6 @@ from account.schemas.admin import (
 )
 from account.schemas.user import UserProfileResponse
 from account.services.admin_user_service import AdminUserService
-from fastapi import APIRouter, Depends, Query, status
-from pbl6_common.deps import UserContext, require_role
-from pbl6_common.pagination import Paginated
 
 router = APIRouter(prefix="/admin/users", tags=["admin"])
 

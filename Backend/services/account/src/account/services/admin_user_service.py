@@ -10,13 +10,14 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from account.models.user import User
-from account.repositories.user_repository import UserRepository
 from pbl6_common.errors import NotFoundError
+
+from account.models.user import User
+from account.repositories.protocols import UserRepositoryProtocol
 
 
 class AdminUserService:
-    def __init__(self, users: UserRepository):
+    def __init__(self, users: UserRepositoryProtocol):
         self._users = users
 
     async def list_students(

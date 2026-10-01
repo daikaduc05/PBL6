@@ -14,14 +14,15 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from account.models.user import User
-from account.repositories.user_repository import UserRepository
 from pbl6_common.errors import ConflictError, NotFoundError
 from pbl6_common.security import hash_password
 
+from account.models.user import User
+from account.repositories.protocols import UserRepositoryProtocol
+
 
 class AdminEditorService:
-    def __init__(self, users: UserRepository):
+    def __init__(self, users: UserRepositoryProtocol):
         self._users = users
 
     async def create_editor(self, *, email: str, password: str, full_name: str) -> User:

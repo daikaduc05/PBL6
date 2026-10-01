@@ -3,49 +3,12 @@
 
 from __future__ import annotations
 
-import uuid
-
 import pytest
 from account.config import AccountSettings
-from account.models.user import User
 from account.services.auth_service import AuthService
+from fakes import FakeDenylist, FakeUserRepository
 from pbl6_common.errors import ConflictError, UnauthorizedError
 from pbl6_common.security import hash_password
-
-
-class FakeUserRepository:
-    def __init__(self):
-        self._by_id: dict[uuid.UUID, User] = {}
-
-    async def get_by_email(self, email: str) -> User | None:
-        return next((u for u in self._by_id.values() if u.email.lower() == email.lower()), None)
-
-    async def get_by_id(self, user_id) -> User | None:
-        return self._by_id.get(uuid.UUID(str(user_id)))
-
-    async def create(self, *, email: str, password_hash: str, full_name: str) -> User:
-        user = User(
-            id=uuid.uuid4(),
-            email=email,
-            password_hash=password_hash,
-            full_name=full_name,
-            role="CUSTOMER",
-            status="ACTIVE",
-            is_vip=False,
-        )
-        self._by_id[user.id] = user
-        return user
-
-
-class FakeDenylist:
-    def __init__(self):
-        self._revoked: set[str] = set()
-
-    async def revoke(self, jti: str, *, ttl_seconds: int) -> None:
-        self._revoked.add(jti)
-
-    async def is_revoked(self, jti: str) -> bool:
-        return jti in self._revoked
 
 
 def make_settings() -> AccountSettings:
