@@ -2,6 +2,7 @@
 
     POST   /api/v1/admin/editors               admin — create an editor account
     GET    /api/v1/admin/editors                admin — list, paginated
+                                                         ?status=&q= to filter/search (T25)
     GET    /api/v1/admin/editors/{id}           admin
     PATCH  /api/v1/admin/editors/{id}           admin — edit full_name
     PATCH  /api/v1/admin/editors/{id}/status    admin — ACTIVE / INACTIVE / LOCKED
@@ -12,6 +13,7 @@ by hand when testing these directly.
 """
 
 import uuid
+from typing import Literal
 
 from account.deps import get_admin_editor_service
 from account.schemas.admin import CreateEditorRequest, UpdateEditorRequest, UpdateStatusRequest
@@ -41,10 +43,14 @@ async def create_editor(
 async def list_editors(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
+    status_filter: Literal["ACTIVE", "INACTIVE", "LOCKED"] | None = Query(
+        default=None, alias="status"
+    ),
+    q: str | None = Query(default=None, min_length=1, max_length=200),
     _: UserContext = Depends(_require_admin),
     svc: AdminEditorService = Depends(get_admin_editor_service),
 ):
-    items, total = await svc.list_editors(page=page, size=size)
+    items, total = await svc.list_editors(page=page, size=size, status=status_filter, q=q)
     return Paginated(items=list(items), total=total, page=page, size=size)
 
 

@@ -35,8 +35,12 @@ class AdminEditorService:
             role="EDITOR",
         )
 
-    async def list_editors(self, *, page: int, size: int) -> tuple[list[User], int]:
-        return await self._users.list_by_role(role="EDITOR", page=page, size=size)
+    async def list_editors(
+        self, *, page: int, size: int, status: str | None = None, q: str | None = None
+    ) -> tuple[list[User], int]:
+        return await self._users.list_by_role(
+            role="EDITOR", page=page, size=size, status=status, q=q
+        )
 
     async def get_editor(self, user_id: uuid.UUID) -> User:
         user = await self._users.get_by_id(user_id)

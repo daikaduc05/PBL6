@@ -21,8 +21,23 @@ class FakeUserRepository:
     async def save(self, user: User) -> None:
         self._by_id[user.id] = user
 
-    async def list_by_role(self, *, role: str, page: int, size: int) -> tuple[list[User], int]:
+    async def list_by_role(
+        self,
+        *,
+        role: str,
+        page: int,
+        size: int,
+        status: str | None = None,
+        q: str | None = None,
+    ) -> tuple[list[User], int]:
         matches = [u for u in self._by_id.values() if u.role == role and not u.deleted_at]
+        if status is not None:
+            matches = [u for u in matches if u.status == status]
+        if q:
+            needle = q.lower()
+            matches = [
+                u for u in matches if needle in u.full_name.lower() or needle in u.email.lower()
+            ]
         matches.sort(key=lambda u: u.created_at, reverse=True)
         start = (page - 1) * size
         return matches[start : start + size], len(matches)
@@ -104,6 +119,32 @@ async def test_set_vip_grants_and_clears_expiry_on_revoke():
     revoked = await service.set_vip(student.id, is_vip=False, vip_expired_at=expiry)
     assert revoked.is_vip is False
     assert revoked.vip_expired_at is None
+
+
+@pytest.mark.asyncio
+async def test_list_students_filters_by_status():
+    service, users = make_service()
+    users.seed(full_name="Active One", status="ACTIVE")
+    users.seed(full_name="Locked One", status="LOCKED")
+
+    items, total = await service.list_students(page=1, size=20, status="LOCKED")
+    assert total == 1
+    assert items[0].full_name == "Locked One"
+
+
+@pytest.mark.asyncio
+async def test_list_students_search_matches_name_or_email():
+    service, users = make_service()
+    users.seed(full_name="Nguyen Van A", email="a@vidu.com")
+    users.seed(full_name="Tran Thi B", email="b@vidu.com")
+
+    by_name, total1 = await service.list_students(page=1, size=20, q="nguyen")
+    assert total1 == 1
+    assert by_name[0].full_name == "Nguyen Van A"
+
+    by_email, total2 = await service.list_students(page=1, size=20, q="b@vidu")
+    assert total2 == 1
+    assert by_email[0].email == "b@vidu.com"
 
 
 @pytest.mark.asyncio
