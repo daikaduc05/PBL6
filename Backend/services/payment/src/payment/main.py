@@ -1,8 +1,9 @@
 from fastapi import FastAPI
-from payment.config import get_settings
 from pbl6_common.db import make_engine, make_session_factory
 from pbl6_common.errors import register_exception_handlers
 from pbl6_common.logging import RequestIdMiddleware, configure_logging
+
+from payment.config import get_settings
 
 settings = get_settings()
 engine = make_engine(settings.database_url)

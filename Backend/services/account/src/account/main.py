@@ -1,12 +1,13 @@
+from fastapi import FastAPI
+from pbl6_common.errors import register_exception_handlers
+from pbl6_common.logging import RequestIdMiddleware, configure_logging
+
 from account.api.v1.admin_editors import router as admin_editors_router
 from account.api.v1.admin_users import router as admin_users_router
 from account.api.v1.auth import router as auth_router
 from account.api.v1.users import router as users_router
 from account.config import get_settings
 from account.deps import engine
-from fastapi import FastAPI
-from pbl6_common.errors import register_exception_handlers
-from pbl6_common.logging import RequestIdMiddleware, configure_logging
 
 
 def create_app() -> FastAPI:
