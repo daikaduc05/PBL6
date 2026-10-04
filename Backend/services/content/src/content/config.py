@@ -4,7 +4,11 @@ from pbl6_common.config import BaseServiceSettings
 
 
 class ContentSettings(BaseServiceSettings):
-    """Content service reads the same env vars as every service, no extras."""
+    """Content service reads the same env vars as every service, plus AWS configs."""
+
+    aws_region: str = "ap-southeast-1"
+    s3_bucket: str = "pbl6-media"
+    cdn_base_url: str = "https://cdn.example.com"
 
 
 @lru_cache
