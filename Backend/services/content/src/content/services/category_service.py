@@ -34,8 +34,8 @@ class CategoryService:
 
         return tree
 
-    async def get_category_tree(self) -> list[CategoryTreeResponse]:
-        categories = await self._category_repo.get_all()
+    async def get_category_tree(self, q: str | None = None) -> list[CategoryTreeResponse]:
+        categories = await self._category_repo.get_all(q=q)
         return self._build_tree(categories)
 
     async def create_category(self, data: CategoryCreate) -> Category:
