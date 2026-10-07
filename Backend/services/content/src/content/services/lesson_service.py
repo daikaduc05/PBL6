@@ -107,3 +107,26 @@ class LessonService:
         # )
 
         return updated
+    async def reject_lesson(self, lesson_id: uuid.UUID) -> Lesson:
+        lesson = await self._lesson_repo.get_by_id(lesson_id)
+        if not lesson:
+            raise HTTPException(status_code=404, detail="Không tìm thấy bài học.")
+
+        if lesson.status != LessonStatus.PENDING:
+            raise HTTPException(
+                status_code=400, detail="Chỉ có thể từ chối bài học khi đang ở trạng thái PENDING."
+            )
+
+        updated = await self._lesson_repo.update(lesson, {"status": LessonStatus.REJECTED})
+
+        # TODO: Publish event when T04 (RabbitMQ) is implemented
+        # await self._publisher.publish(
+        #     "lesson.rejected",
+        #     {
+        #         "lesson_id": str(updated.id),
+        #         "title": updated.title,
+        #         "category_id": str(updated.category_id),
+        #     },
+        # )
+
+        return updated
