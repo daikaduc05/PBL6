@@ -21,7 +21,11 @@ class Base(DeclarativeBase):
 
 
 def make_engine(database_url: str) -> AsyncEngine:
-    return create_async_engine(database_url, pool_pre_ping=True)
+    return create_async_engine(
+        database_url,
+        pool_pre_ping=True,
+        connect_args={"statement_cache_size": 0}
+    )
 
 
 def make_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
