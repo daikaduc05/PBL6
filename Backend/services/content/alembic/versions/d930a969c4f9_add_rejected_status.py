@@ -20,7 +20,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     """Upgrade schema."""
     with op.get_context().autocommit_block():
-        op.execute("ALTER TYPE content.lesson_status_enum ADD VALUE IF NOT EXISTS 'rejected'")
+        op.execute("ALTER TYPE content.lesson_status_enum ADD VALUE IF NOT EXISTS 'REJECTED'")
 
 
 def downgrade() -> None:
