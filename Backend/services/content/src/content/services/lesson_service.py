@@ -107,6 +107,7 @@ class LessonService:
         # )
 
         return updated
+
     async def reject_lesson(self, lesson_id: uuid.UUID) -> Lesson:
         lesson = await self._lesson_repo.get_by_id(lesson_id)
         if not lesson:

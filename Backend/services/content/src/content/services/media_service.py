@@ -51,7 +51,7 @@ class MediaService:
 
         # Cloudinary CDN url prediction
         # For simplicity, we just use the API to get URL later, but for prediction:
-        ext = req.filename.split('.')[-1]
+        ext = req.filename.split(".")[-1]
         cdn_url = f"https://res.cloudinary.com/{self.settings.cloudinary_cloud_name}/raw/upload/{full_public_id}.{ext}"
         if req.kind == MediaKind.IMAGE:
             cdn_url = f"https://res.cloudinary.com/{self.settings.cloudinary_cloud_name}/image/upload/{full_public_id}.{ext}"
