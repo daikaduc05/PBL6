@@ -9,8 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from content.config import get_settings
 from content.repositories.category_repository import CategoryRepository
 from content.repositories.lesson_repository import LessonRepository
+from content.repositories.media_repository import MediaRepository
 from content.services.category_service import CategoryService
 from content.services.lesson_service import LessonService
+from content.services.media_service import MediaService
 
 settings = get_settings()
 engine = make_engine(settings.database_url)
@@ -39,3 +41,14 @@ async def get_lesson_service(
     category_repo: CategoryRepository = Depends(get_category_repo),
 ) -> LessonService:
     return LessonService(lesson_repo, category_repo)
+
+
+async def get_media_repo(db: AsyncSession = Depends(get_db)) -> MediaRepository:
+    return MediaRepository(db)
+
+
+async def get_media_service(
+    media_repo: MediaRepository = Depends(get_media_repo),
+    lesson_repo: LessonRepository = Depends(get_lesson_repo),
+) -> MediaService:
+    return MediaService(media_repo, lesson_repo)

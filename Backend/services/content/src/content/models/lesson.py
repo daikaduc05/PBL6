@@ -24,6 +24,7 @@ class LessonStatus(str, enum.Enum):  # noqa: UP042
     DRAFT = "draft"
     PENDING = "pending"
     PUBLISHED = "published"
+    REJECTED = "rejected"
 
 
 class Lesson(Base):

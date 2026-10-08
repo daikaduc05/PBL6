@@ -138,3 +138,15 @@ async def approve_lesson(
     service: LessonService = Depends(get_lesson_service),
 ):
     return await service.approve_lesson(lesson_id)
+
+
+@router.post(
+    "/{lesson_id}/reject",
+    response_model=LessonResponse,
+    dependencies=[Depends(require_role("admin"))],
+)
+async def reject_lesson(
+    lesson_id: uuid.UUID,
+    service: LessonService = Depends(get_lesson_service),
+):
+    return await service.reject_lesson(lesson_id)
