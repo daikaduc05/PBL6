@@ -89,9 +89,10 @@ def register_exception_handlers(app: FastAPI) -> None:
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
         # FastAPI's default 422 body is reshaped into the same envelope so
-        # clients only ever parse one error format.
+        # clients only ever parse one error format. The literal avoids the
+        # starlette constant, which was renamed between versions.
         return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=422,
             content=_envelope(
                 "VALIDATION_ERROR",
                 "Request validation failed",

@@ -9,6 +9,7 @@ from sqlalchemy import text
 from notification.config import get_settings
 from notification.db import get_engine
 from notification.errors import register_exception_handlers, request_id_middleware
+from notification.notifications.router import router as notifications_router
 
 
 @asynccontextmanager
@@ -60,8 +61,7 @@ def create_app() -> FastAPI:
             response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return {"status": "ready" if ready else "not ready", "checks": checks}
 
-    # Routers land here as features merge:
-    #   app.include_router(notifications_router)   # T13
+    app.include_router(notifications_router)  # functions 8.2-8.5
     #   app.include_router(recommendation_router)  # T17
     return app
 

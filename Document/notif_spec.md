@@ -369,8 +369,8 @@ Authorization: Bearer <JWT>        (gateway verify, forward X-User-Id)
 Kèm hai endpoint đánh dấu đã đọc — `is_read` đã có trong schema nên phải có API để đổi nó:
 
 ```http
-PATCH /api/v1/notifications/{id}/read     → 200
-PATCH /api/v1/notifications/read-all      → { "updated": 7 }
+PATCH /api/v1/notifications/{id}/read     → 204 No Content
+PATCH /api/v1/notifications/read-all      → 200 { "updated": 7 }
 ```
 
 ### 7.2. Hướng thực thi
