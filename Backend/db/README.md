@@ -12,7 +12,11 @@ DDL for all five bounded contexts of PBL6, targeting a single Supabase project.
 | `03_learning.sql` | `learning` | Hà | `quizzes`, `questions`, `options`, `histories`, `favorite_lessons`, `comments` |
 | `04_payment.sql` | `payment` | Long | `transactions` |
 | `05_notification.sql` | `notification` | Đạt | `messages`, `settings` |
-| `schema.sql` | all | — | the six files above concatenated, for a one-shot run |
+| `06_notification_processed_events.sql` | `notification` | Đạt | `processed_events` — consumer idempotency ledger |
+| `schema.sql` | all | — | files `00`–`05` concatenated, for a one-shot run |
+
+`schema.sql` predates `06_*`; run `06_notification_processed_events.sql` separately
+(it is idempotent, so running it on an existing database is safe).
 
 All files are idempotent (`create ... if not exists`), so re-running is safe.
 
