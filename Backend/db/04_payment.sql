@@ -4,6 +4,13 @@
 --
 -- Simplified per the ER diagram: no `plans` table and no `outbox` table
 -- (backend.md §5 has both). If you keep the outbox pattern later, add it here.
+--
+-- `plan_code` (added T29, Alembic migration 0002 on the live Supabase DB —
+-- this file is the historical baseline, kept in sync by hand; re-running it
+-- here is a no-op on an existing table since the column already exists
+-- there via the migration, not via this script) stands in for the dropped
+-- `plans` table — see Backend/services/payment/src/payment/plans.py for the
+-- hardcoded catalogue.
 -- ==========================================================================
 
 set search_path = payment, public;
@@ -14,6 +21,7 @@ create table if not exists payment.transactions (
     amount         numeric(14,2) not null check (amount >= 0),   -- VND
     payment_method text          not null
                        check (payment_method in ('VNPAY', 'MOMO')),
+    plan_code      text          not null default 'VIP_1_MONTH',
     status         text          not null default 'PENDING'
                        check (status in ('PENDING', 'SUCCESS', 'FAILED')),
     created_at     timestamptz   not null default now()
@@ -24,4 +32,5 @@ create index if not exists transactions_status_idx on payment.transactions (stat
 
 comment on table  payment.transactions               is 'Checkout attempts. SUCCESS drives the VIP upgrade event.';
 comment on column payment.transactions.payment_method is 'VNPAY | MOMO';
+comment on column payment.transactions.plan_code      is 'Key into payment.plans.PLANS — which VIP plan was purchased';
 comment on column payment.transactions.status         is 'PENDING | SUCCESS | FAILED';
