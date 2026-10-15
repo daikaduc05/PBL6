@@ -2,38 +2,32 @@
 
 Two kinds of test live here:
 
-* ``client`` — no database. Health probes and header parsing.
-* ``api_client`` — a real PostgreSQL in Docker, with the project's own DDL
-  applied from ``Backend/db/*.sql``. The service uses PostgreSQL schemas,
-  ``gen_random_uuid()`` and ``ON CONFLICT``, none of which SQLite can emulate.
-  Running the real DDL also means a model drifting from the committed SQL
-  shows up as a failing test.
+* ``client`` — no database. Health liveness and wiring.
+* ``api_client`` — real PostgreSQL in Docker, schema built by running the
+  service's own ``alembic upgrade head``. The service relies on PostgreSQL
+  schemas, ``gen_random_uuid()`` and ``ON CONFLICT``, none of which SQLite can
+  emulate — and driving the real migrations means a model drifting from them
+  fails the build instead of passing quietly.
 """
 
-import asyncio
 import os
 import subprocess
+import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost:5432/postgres")
-os.environ.setdefault("DEBUG", "false")
+os.environ.setdefault("JWT_SECRET", "test-secret-not-used-by-this-service")
 
 from httpx import ASGITransport, AsyncClient  # noqa: E402
+from notification.deps import get_db  # noqa: E402
+from notification.main import create_app  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine  # noqa: E402
 from sqlalchemy.pool import NullPool  # noqa: E402
 
-from notification.db import get_session  # noqa: E402
-from notification.main import create_app  # noqa: E402
-
-# tests/ -> notification/ -> services/ -> Backend/
-DB_DIR = Path(__file__).resolve().parents[3] / "db"
-DDL_FILES = (
-    "00_schemas.sql",
-    "05_notification.sql",
-    "06_notification_processed_events.sql",
-)
+SERVICE_DIR = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture
@@ -52,31 +46,14 @@ async def client(app):
 # --------------------------------------------------------------------------
 
 
-async def _apply_ddl(url: str) -> None:
-    """Apply the committed SQL files with asyncpg directly.
-
-    Not through SQLAlchemy: each file holds several statements, and asyncpg
-    rejects multi-statement text when it goes through a prepared statement.
-    Its own ``execute`` uses the simple query protocol, which accepts them.
-    """
-    import asyncpg
-
-    conn = await asyncpg.connect(url.replace("postgresql+asyncpg://", "postgresql://"))
-    try:
-        for name in DDL_FILES:
-            await conn.execute((DB_DIR / name).read_text(encoding="utf-8"))
-    finally:
-        await conn.close()
-
-
 def _ensure_docker_host() -> None:
     """Point the Docker SDK at the active context's endpoint.
 
     Docker Desktop on Windows listens on ``npipe:////./pipe/dockerDesktopLinuxEngine``
-    while the Python SDK defaults to ``npipe:////./pipe/docker_engine``, so
-    container startup fails with "cannot find the file specified" even though
+    while the Python SDK defaults to ``npipe:////./pipe/docker_engine``, so the
+    container fails to start with "cannot find the file specified" even though
     the ``docker`` CLI works. Asking the CLI for the real endpoint keeps this
-    working for everyone without a manual DOCKER_HOST.
+    working without a hand-set DOCKER_HOST.
     """
     if os.environ.get("DOCKER_HOST"):
         return
@@ -94,9 +71,27 @@ def _ensure_docker_host() -> None:
         os.environ["DOCKER_HOST"] = endpoint
 
 
+def _run_migrations(url: str) -> None:
+    """Run `alembic upgrade head` against the throwaway database.
+
+    A subprocess rather than Alembic's Python API: ``get_settings`` is an
+    lru_cache that already holds the dummy URL by the time fixtures run, and a
+    separate process picks up DATABASE_URL cleanly — the same command the team
+    runs by hand.
+    """
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        cwd=SERVICE_DIR,
+        env={**os.environ, "DATABASE_URL": url},
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"alembic upgrade failed:\n{result.stdout}\n{result.stderr}")
+
+
 @pytest.fixture(scope="session")
-def pg_url() -> str:
-    """Start PostgreSQL in Docker and apply the project DDL once per session."""
+def pg_url() -> Iterator[str]:
     try:
         from testcontainers.community.postgres import PostgresContainer
     except ImportError:  # pragma: no cover - older testcontainers layout
@@ -119,7 +114,7 @@ def pg_url() -> str:
         f"/{container.dbname}"
     )
     try:
-        asyncio.run(_apply_ddl(url))
+        _run_migrations(url)
         yield url
     finally:
         container.stop()
@@ -129,9 +124,9 @@ def pg_url() -> str:
 async def session(pg_url):
     """A session whose writes are rolled back after the test.
 
-    ``join_transaction_mode="create_savepoint"`` lets the endpoints call
-    ``commit()`` for real — the commit lands on a savepoint, and rolling back
-    the outer transaction leaves the database untouched for the next test.
+    ``join_transaction_mode="create_savepoint"`` lets the request pipeline
+    commit for real — the commit lands on a savepoint, and rolling back the
+    outer transaction leaves the database clean for the next test.
     """
     engine = create_async_engine(pg_url, poolclass=NullPool)
     async with engine.connect() as conn:
@@ -152,9 +147,11 @@ async def api_client(app, session):
     """Client whose requests run against the rolled-back test session."""
 
     async def _override():
+        # Mirrors pbl6_common.db.make_get_db, which commits once per request.
         yield session
+        await session.commit()
 
-    app.dependency_overrides[get_session] = _override
+    app.dependency_overrides[get_db] = _override
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
