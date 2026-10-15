@@ -12,8 +12,11 @@ repeating that.
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 
+from payment.models.outbox import OutboxEntry
 from payment.models.transaction import Transaction
 
 
@@ -53,3 +56,27 @@ class FakeTransactionRepository:
         )
         self._by_id[transaction.id] = transaction
         return transaction
+
+
+class FakeOutboxRepository:
+    def __init__(self) -> None:
+        self.entries: list[OutboxEntry] = []
+
+    async def create(
+        self, *, aggregate_id: uuid.UUID, event_type: str, payload: dict[str, Any]
+    ) -> OutboxEntry:
+        entry = OutboxEntry(
+            id=uuid.uuid4(),
+            aggregate_id=aggregate_id,
+            event_type=event_type,
+            payload=payload,
+            created_at=datetime.now(UTC),
+        )
+        self.entries.append(entry)
+        return entry
+
+    async def fetch_unpublished(self, *, limit: int) -> list[OutboxEntry]:
+        return [e for e in self.entries if e.published_at is None][:limit]
+
+    async def mark_published(self, entry: OutboxEntry) -> None:
+        entry.published_at = datetime.now(UTC)

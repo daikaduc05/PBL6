@@ -10,7 +10,7 @@ import pytest
 from payment.config import PaymentSettings
 from payment.services.webhook_service import WebhookService
 from payment.webhooks import momo, vnpay
-from payment_fakes import FakeTransactionRepository
+from payment_fakes import FakeOutboxRepository, FakeTransactionRepository
 from pbl6_common.errors import UnauthorizedError
 
 VNPAY_SECRET = "test-vnpay-hash-secret"
@@ -28,9 +28,11 @@ def make_settings() -> PaymentSettings:
     )
 
 
-def make_service() -> tuple[WebhookService, FakeTransactionRepository]:
+def make_service() -> tuple[WebhookService, FakeTransactionRepository, FakeOutboxRepository]:
     transactions = FakeTransactionRepository()
-    return WebhookService(transactions=transactions, settings=make_settings()), transactions
+    outbox = FakeOutboxRepository()
+    service = WebhookService(transactions=transactions, outbox=outbox, settings=make_settings())
+    return service, transactions, outbox
 
 
 def signed_vnpay_params(txn_ref: str, **extra: str) -> dict[str, str]:
@@ -70,7 +72,7 @@ def signed_momo_payload(order_id: str, **extra: object) -> dict[str, object]:
 
 @pytest.mark.asyncio
 async def test_vnpay_valid_webhook_marks_transaction_success():
-    service, txns = make_service()
+    service, txns, outbox = make_service()
     transaction = txns.seed(status="PENDING")
 
     ack = await service.handle_vnpay(signed_vnpay_params(str(transaction.id)))
@@ -78,21 +80,26 @@ async def test_vnpay_valid_webhook_marks_transaction_success():
     assert ack["RspCode"] == "00"
     assert txns._by_id[transaction.id].status == "SUCCESS"
     assert txns._by_id[transaction.id].provider_txn_ref == "14512345"
+    assert len(outbox.entries) == 1
+    assert outbox.entries[0].event_type == "payment.succeeded"
 
 
 @pytest.mark.asyncio
 async def test_vnpay_failed_payment_marks_transaction_failed():
-    service, txns = make_service()
+    service, txns, outbox = make_service()
     transaction = txns.seed(status="PENDING")
 
     await service.handle_vnpay(signed_vnpay_params(str(transaction.id), vnp_ResponseCode="24"))
 
     assert txns._by_id[transaction.id].status == "FAILED"
+    assert len(outbox.entries) == 1
+    assert outbox.entries[0].event_type == "payment.failed"
+    assert outbox.entries[0].payload["reason"] == "vnp_ResponseCode=24"
 
 
 @pytest.mark.asyncio
 async def test_vnpay_invalid_signature_raises():
-    service, txns = make_service()
+    service, txns, outbox = make_service()
     transaction = txns.seed(status="PENDING")
     params = signed_vnpay_params(str(transaction.id))
     params["vnp_Amount"] = "1"  # tamper after signing
@@ -100,18 +107,20 @@ async def test_vnpay_invalid_signature_raises():
     with pytest.raises(UnauthorizedError):
         await service.handle_vnpay(params)
     assert txns._by_id[transaction.id].status == "PENDING"  # untouched
+    assert outbox.entries == []
 
 
 @pytest.mark.asyncio
 async def test_vnpay_unknown_order_returns_not_found_ack_without_raising():
-    service, _ = make_service()
+    service, _, outbox = make_service()
     ack = await service.handle_vnpay(signed_vnpay_params(str(uuid.uuid4())))
     assert ack["RspCode"] == "99"
+    assert outbox.entries == []
 
 
 @pytest.mark.asyncio
 async def test_vnpay_redelivered_webhook_is_idempotent():
-    service, txns = make_service()
+    service, txns, outbox = make_service()
     transaction = txns.seed(status="PENDING")
     params = signed_vnpay_params(str(transaction.id))
 
@@ -121,11 +130,12 @@ async def test_vnpay_redelivered_webhook_is_idempotent():
 
     assert ack["RspCode"] == "00"
     assert txns._by_id[transaction.id].status == "FAILED"  # untouched by the redelivery
+    assert len(outbox.entries) == 1  # redelivery didn't write a second event
 
 
 @pytest.mark.asyncio
 async def test_momo_valid_webhook_marks_transaction_success():
-    service, txns = make_service()
+    service, txns, outbox = make_service()
     transaction = txns.seed(status="PENDING")
 
     ack = await service.handle_momo(signed_momo_payload(str(transaction.id)))
@@ -133,11 +143,13 @@ async def test_momo_valid_webhook_marks_transaction_success():
     assert ack["resultCode"] == 0
     assert txns._by_id[transaction.id].status == "SUCCESS"
     assert txns._by_id[transaction.id].provider_txn_ref == "9876543210"
+    assert len(outbox.entries) == 1
+    assert outbox.entries[0].event_type == "payment.succeeded"
 
 
 @pytest.mark.asyncio
 async def test_momo_invalid_signature_raises():
-    service, txns = make_service()
+    service, txns, outbox = make_service()
     transaction = txns.seed(status="PENDING")
     payload = signed_momo_payload(str(transaction.id))
     payload["amount"] = 1  # tamper after signing
@@ -145,11 +157,12 @@ async def test_momo_invalid_signature_raises():
     with pytest.raises(UnauthorizedError):
         await service.handle_momo(payload)
     assert txns._by_id[transaction.id].status == "PENDING"
+    assert outbox.entries == []
 
 
 @pytest.mark.asyncio
 async def test_momo_redelivered_webhook_is_idempotent():
-    service, txns = make_service()
+    service, txns, outbox = make_service()
     transaction = txns.seed(status="PENDING")
     payload = signed_momo_payload(str(transaction.id))
 
@@ -159,3 +172,4 @@ async def test_momo_redelivered_webhook_is_idempotent():
 
     assert ack["resultCode"] == 0
     assert txns._by_id[transaction.id].status == "FAILED"
+    assert len(outbox.entries) == 1  # redelivery didn't write a second event
