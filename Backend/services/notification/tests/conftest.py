@@ -92,6 +92,15 @@ def _run_migrations(url: str) -> None:
 
 @pytest.fixture(scope="session")
 def pg_url() -> Iterator[str]:
+    # CI already runs PostgreSQL as a service container and exports
+    # DATABASE_URL, so starting a second database through testcontainers would
+    # only be slower and would need Docker inside the runner.
+    if os.environ.get("CI"):
+        url = os.environ["DATABASE_URL"]
+        _run_migrations(url)
+        yield url
+        return
+
     try:
         from testcontainers.community.postgres import PostgresContainer
     except ImportError:  # pragma: no cover - older testcontainers layout

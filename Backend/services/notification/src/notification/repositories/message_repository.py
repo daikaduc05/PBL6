@@ -5,11 +5,22 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
+from typing import Any, cast
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import CursorResult, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from notification.models.message import Message
+
+
+def _affected_rows(result: Any) -> int:
+    """Row count of an UPDATE/DELETE.
+
+    ``Session.execute`` is typed as returning ``Result``, which has no
+    ``rowcount``; DML actually yields a ``CursorResult``. The cast tells mypy
+    what SQLAlchemy guarantees at runtime for these statements.
+    """
+    return cast("CursorResult[Any]", result).rowcount
 
 
 class MessageRepository:
@@ -56,7 +67,7 @@ class MessageRepository:
             .where(Message.id == message_id, Message.user_id == user_id)
             .values(is_read=True)
         )
-        return result.rowcount > 0
+        return _affected_rows(result) > 0
 
     async def mark_all_read(self, user_id: uuid.UUID) -> int:
         result = await self._session.execute(
@@ -64,7 +75,7 @@ class MessageRepository:
             .where(Message.user_id == user_id, Message.is_read.is_(False))
             .values(is_read=True)
         )
-        return result.rowcount
+        return _affected_rows(result)
 
     async def delete(self, *, user_id: uuid.UUID, message_id: uuid.UUID) -> bool:
         """Hard delete — the table has no deleted_at, and a notification the
@@ -77,4 +88,4 @@ class MessageRepository:
         result = await self._session.execute(
             delete(Message).where(Message.id == message_id, Message.user_id == user_id)
         )
-        return result.rowcount > 0
+        return _affected_rows(result) > 0
