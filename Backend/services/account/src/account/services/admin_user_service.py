@@ -10,14 +10,16 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+from account.events.publisher import EventPublisherProtocol
 from account.models.user import User
 from account.repositories.user_repository import UserRepository
 from pbl6_common.errors import NotFoundError
 
 
 class AdminUserService:
-    def __init__(self, users: UserRepository):
+    def __init__(self, users: UserRepository, publisher: EventPublisherProtocol):
         self._users = users
+        self._publisher = publisher
 
     async def list_students(
         self, *, page: int, size: int, status: str | None = None, q: str | None = None
@@ -39,13 +41,33 @@ class AdminUserService:
         await self._users.save(user)
         return user
 
-    async def set_status(self, user_id: uuid.UUID, *, status: str) -> User:
+    async def set_status(
+        self,
+        user_id: uuid.UUID,
+        *,
+        status: str,
+        locked_by: uuid.UUID | None = None,
+        reason: str | None = None,
+    ) -> User:
         user = await self.get_student(user_id)
+        previous_status = user.status
         user.status = status
         await self._users.save(user)
-        # TODO(T26): publish account.locked / account.unlocked once the event
-        # contract (T04, owned by Duc) exists. Not wired yet — this task is
-        # scoped to the CRUD screen only.
+
+        # Only the LOCKED boundary is in the event contract (backend.md §6)
+        # — a plain ACTIVE<->INACTIVE toggle isn't account.locked/unlocked.
+        if status == "LOCKED" and previous_status != "LOCKED":
+            await self._publisher.publish(
+                "account.locked",
+                {
+                    "user_id": str(user_id),
+                    "locked_by": str(locked_by) if locked_by else None,
+                    "reason": reason,
+                },
+            )
+        elif status != "LOCKED" and previous_status == "LOCKED":
+            await self._publisher.publish("account.unlocked", {"user_id": str(user_id)})
+
         return user
 
     async def set_vip(
