@@ -4,7 +4,17 @@ from pbl6_common.config import BaseServiceSettings
 
 
 class PaymentSettings(BaseServiceSettings):
-    """Payment service reads the same env vars as every service, no extras."""
+    """Payment service reads the same env vars as every service, plus:
+
+    mock_payment: real VNPay/Momo integration isn't available yet (no
+    working sandbox credentials — see T29's commit for why), so this
+    defaults to True. Checkout marks the transaction SUCCESS immediately
+    and skips the real gateway round-trip entirely (backend.md's
+    documented fallback for exactly this situation).
+    """
+
+    mock_payment: bool = True
+    checkout_result_url: str = "http://localhost:3000/checkout/result"
 
 
 @lru_cache

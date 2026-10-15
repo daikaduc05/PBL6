@@ -12,4 +12,12 @@ def test_transaction_maps_to_payment_schema():
 
 def test_transaction_columns_match_the_sql_baseline():
     columns = {c.name for c in Transaction.__table__.columns}
-    assert columns == {"id", "user_id", "amount", "payment_method", "status", "created_at"}
+    assert columns == {
+        "id",
+        "user_id",
+        "amount",
+        "payment_method",
+        "plan_code",
+        "status",
+        "created_at",
+    }

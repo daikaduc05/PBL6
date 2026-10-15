@@ -6,6 +6,11 @@ two must be kept in sync by hand since the live table predates Alembic here
 Simplified per the ER diagram the team settled on: no `plans` table (price
 is just the raw amount per transaction) and no `outbox` table — T31 adds
 that when it's actually needed.
+
+`plan_code` was added in migration 0002 (T29) — not in the original
+baseline. There's still no `plans` table (see payment.plans for the
+hardcoded catalogue); this column just remembers which one was bought, so
+T31's event publish can look up its duration_days later.
 """
 
 from __future__ import annotations
@@ -47,6 +52,7 @@ class Transaction(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     payment_method: Mapped[str] = mapped_column(String, nullable=False)
+    plan_code: Mapped[str] = mapped_column(String, nullable=False, server_default="VIP_1_MONTH")
     status: Mapped[str] = mapped_column(String, nullable=False, default="PENDING")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
