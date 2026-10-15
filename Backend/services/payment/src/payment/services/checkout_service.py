@@ -25,7 +25,7 @@ from pbl6_common.errors import AppError
 from payment.config import PaymentSettings
 from payment.models.transaction import Transaction
 from payment.plans import PLANS, PlanCode
-from payment.repositories.protocols import TransactionRepositoryProtocol
+from payment.repositories.protocols import OutboxRepositoryProtocol, TransactionRepositoryProtocol
 
 
 class PaymentNotConfiguredError(AppError):
@@ -34,8 +34,14 @@ class PaymentNotConfiguredError(AppError):
 
 
 class CheckoutService:
-    def __init__(self, transactions: TransactionRepositoryProtocol, settings: PaymentSettings):
+    def __init__(
+        self,
+        transactions: TransactionRepositoryProtocol,
+        outbox: OutboxRepositoryProtocol,
+        settings: PaymentSettings,
+    ):
         self._transactions = transactions
+        self._outbox = outbox
         self._settings = settings
 
     async def checkout(
@@ -56,16 +62,31 @@ class CheckoutService:
             )
 
         # Mock mode: no real gateway call, mark as already paid.
-        # TODO(T31): publish payment.succeeded via the outbox once the
-        # RabbitMQ relay (T31) and the event contract (T04, owned by Duc)
-        # exist — that event is what drives the VIP upgrade on the account
-        # side (T26). Until then this transaction's SUCCESS status has no
-        # downstream effect, which is fine for demoing the payment flow
-        # itself but does not yet grant VIP.
         transaction.status = "SUCCESS"
         await self._transactions.save(transaction)
+        await self._publish_succeeded(transaction, plan_code)
 
         return transaction
+
+    async def _publish_succeeded(self, transaction: Transaction, plan_code: PlanCode) -> None:
+        # Written in the same DB transaction as the status update above —
+        # see OutboxRepository's docstring for why that's the whole point.
+        # Field names (plan_id, amount_vnd) match backend.md §6's
+        # documented payment.succeeded contract, which T26 (account) and
+        # the notification service already code against; plan_id's value
+        # is our plan_code string since there is no `plans` table here.
+        plan = PLANS[plan_code]
+        await self._outbox.create(
+            aggregate_id=transaction.id,
+            event_type="payment.succeeded",
+            payload={
+                "transaction_id": str(transaction.id),
+                "user_id": str(transaction.user_id),
+                "plan_id": plan_code,
+                "amount_vnd": float(transaction.amount),
+                "duration_days": plan["duration_days"],
+            },
+        )
 
     def build_redirect_url(self, transaction: Transaction) -> str:
         base = self._settings.checkout_result_url
