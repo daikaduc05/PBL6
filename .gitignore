@@ -27,3 +27,8 @@ Thumbs.db
 
 # Design canvas exports (large, generated, view-only — not source)
 Design/mockups/
+
+# Test coverage artifacts
+.coverage
+coverage.xml
+htmlcov/

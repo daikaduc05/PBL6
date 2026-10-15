@@ -17,18 +17,22 @@ Năm bounded context chạy như năm service độc lập, nhưng **dùng chung
 
 Hệ quả quan trọng nhất cho M2: **mọi dữ liệu của service khác đều nằm trong tầm với bằng SQL trực tiếp.** Đây là điều mà kiến trúc "database per service" không cho phép, và nó quyết định cách mảng Recommendation được xây (xem §0.4).
 
-### 0.2. Nguồn sự thật về schema: file SQL, không dùng Alembic
+### 0.2. Nguồn sự thật về schema: Alembic, mỗi service một lịch sử
 
-Schema được quản lý bằng các file SQL đánh số trong `Backend/db/`, chạy trên Supabase SQL Editor hoặc `psql`. **Không dùng Alembic.** Lý do: năm service dùng chung một database, mỗi service một schema — Alembic per-service sẽ tạo năm bảng `alembic_version` rải rác và không ai trong nhóm đang setup nó.
+Schema do **Alembic** quản lý, giống account và content. Các file SQL trong `Backend/db/` chỉ là **baseline** ghi lại những gì đã tạo tay trên Supabase trước khi Alembic được dựng — không thêm file SQL mới nữa.
 
-Đổi schema = thêm một file mới đánh số tiếp theo, idempotent (`create ... if not exists`), commit vào `Backend/db/`. Đánh đổi: không rollback tự động. Chấp nhận được ở quy mô đồ án.
+Mối lo "năm service dùng chung database sẽ tạo năm bảng `alembic_version` rải rác" được xử lý bằng `version_table_schema` trong `alembic/env.py`: mỗi service giữ bảng version **bên trong schema của chính nó**, hoàn toàn độc lập.
 
-File của M2:
+Migration của M2:
 
-| File | Nội dung | Trạng thái |
+| Revision | Nội dung | Cách áp |
 |---|---|---|
-| `05_notification.sql` | `notification.messages`, `notification.settings` | Đã chạy trên Supabase |
-| `06_notification_processed_events.sql` | `notification.processed_events` | **Mới — cần chạy trước T16** |
+| `0001_baseline_notification` | `messages`, `settings` — mirror `05_notification.sql` | `alembic stamp 0001` (Supabase đã có) |
+| `0002_processed_events` | `processed_events` | `alembic upgrade head` |
+
+Database trống (CI, container test) bỏ qua bước stamp và chạy thẳng `upgrade head` — revision 0001 tự tạo schema.
+
+**Một bẫy đã gặp:** `alembic/env.py` phải dùng `engine.begin()` chứ không phải `engine.connect()`. SQLAlchemy 2.0 rollback connection chưa commit khi thoát, nên với `connect()` toàn bộ migration bị huỷ âm thầm trong khi `alembic upgrade head` vẫn báo thành công. Service account hiện đang dùng `connect()` — cần báo Long/Đức.
 
 ### 0.3. Schema `notification` — bám đúng bản đã deploy
 

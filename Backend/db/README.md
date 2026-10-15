@@ -12,13 +12,23 @@ DDL for all five bounded contexts of PBL6, targeting a single Supabase project.
 | `03_learning.sql` | `learning` | Hà | `quizzes`, `questions`, `options`, `histories`, `favorite_lessons`, `comments` |
 | `04_payment.sql` | `payment` | Long | `transactions` |
 | `05_notification.sql` | `notification` | Đạt | `messages`, `settings` |
-| `06_notification_processed_events.sql` | `notification` | Đạt | `processed_events` — consumer idempotency ledger |
-| `schema.sql` | all | — | files `00`–`05` concatenated, for a one-shot run |
-
-`schema.sql` predates `06_*`; run `06_notification_processed_events.sql` separately
-(it is idempotent, so running it on an existing database is safe).
+| `schema.sql` | all | — | the six files above concatenated, for a one-shot run |
 
 All files are idempotent (`create ... if not exists`), so re-running is safe.
+
+## These files are the baseline, not the ongoing source of truth
+
+They record what was created directly on Supabase before Alembic was wired up.
+**New schema changes go through each service's own Alembic migrations**, not
+through a new numbered file here — see `services/<name>/alembic/versions/`.
+
+Each service's baseline revision mirrors its file above, so an environment that
+already ran this SQL uses `alembic stamp <baseline>` and only later revisions
+are applied with `alembic upgrade head`. A fresh database (CI, a test
+container) can skip these files entirely and run `upgrade head` from empty.
+
+Example — `notification` owns a third table, `processed_events`, which exists
+only as revision `0002` because it was added after Alembic arrived.
 
 ## One Supabase project, five schemas
 
