@@ -74,7 +74,14 @@ Kiến trúc code tách `EmailSender` thành protocol nên đổi nhà cung cấ
 
 ## 3. Dữ liệu
 
-DDL đã chạy trên Supabase (`Backend/db/05_notification.sql`, `06_notification_processed_events.sql`). Dự án **không dùng Alembic** — đổi schema thì thêm file SQL đánh số mới.
+Schema do **Alembic** quản lý, mỗi service một lịch sử migration riêng — giống account và content. Các file trong `Backend/db/` chỉ là **baseline** ghi lại những gì đã tạo tay trên Supabase trước khi Alembic được dựng.
+
+| Revision | Bảng | Cách áp |
+|---|---|---|
+| `0001` | `messages`, `settings` — mirror `05_notification.sql` | `alembic stamp 0001` (Supabase đã có sẵn) |
+| `0002` | `processed_events` | `alembic upgrade head` |
+
+Mỗi service giữ bảng `alembic_version` **bên trong schema của chính nó** (`version_table_schema` trong `alembic/env.py`), nên năm service dùng chung một database Supabase không đụng nhau.
 
 ```sql
 notification.messages              -- thông báo in-app (8.2, 8.3, 8.4)
