@@ -2,7 +2,7 @@ import uuid
 
 from pbl6_common.db import Base
 from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import TSVECTOR, UUID
 from sqlalchemy.orm import relationship
 
 
@@ -15,5 +15,6 @@ class Category(Base):
     name = Column(String, nullable=False)
     slug = Column(String, nullable=False, unique=True)
     sort_order = Column(Integer, default=0)
+    search_vector = Column(TSVECTOR)
 
     children = relationship("Category", backref="parent", remote_side=[id])

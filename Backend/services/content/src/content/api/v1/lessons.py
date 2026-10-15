@@ -28,6 +28,7 @@ class LessonListResponse(BaseModel):
 async def list_lessons(
     category_id: uuid.UUID | None = None,
     level: str | None = None,
+    q: str | None = None,
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=100)] = 20,
     service: LessonService = Depends(get_lesson_service),
@@ -35,7 +36,7 @@ async def list_lessons(
 ):
     offset = (page - 1) * size
     lessons = await service.get_lessons(
-        category_id=category_id, level=level, limit=size, offset=offset
+        category_id=category_id, level=level, q=q, limit=size, offset=offset
     )
 
     response_items = []
