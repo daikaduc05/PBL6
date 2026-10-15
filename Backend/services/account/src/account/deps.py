@@ -8,7 +8,10 @@ from collections.abc import AsyncGenerator
 
 from account.config import get_settings
 from account.repositories.user_repository import UserRepository
+from account.services.admin_editor_service import AdminEditorService
+from account.services.admin_user_service import AdminUserService
 from account.services.auth_service import AuthService
+from account.services.user_service import UserService
 from fastapi import Depends
 from pbl6_common.db import make_engine, make_get_db, make_session_factory
 from pbl6_common.security import RefreshTokenDenylist
@@ -36,3 +39,15 @@ def get_auth_service(
         denylist=RefreshTokenDenylist(redis),
         settings=settings,
     )
+
+
+def get_user_service(session: AsyncSession = Depends(get_db)) -> UserService:
+    return UserService(users=UserRepository(session))
+
+
+def get_admin_user_service(session: AsyncSession = Depends(get_db)) -> AdminUserService:
+    return AdminUserService(users=UserRepository(session))
+
+
+def get_admin_editor_service(session: AsyncSession = Depends(get_db)) -> AdminEditorService:
+    return AdminEditorService(users=UserRepository(session))
