@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from payment.config import get_settings
 from payment.repositories.transaction_repository import TransactionRepository
 from payment.services.checkout_service import CheckoutService
+from payment.services.webhook_service import WebhookService
 
 settings = get_settings()
 engine = make_engine(settings.database_url)
@@ -20,3 +21,7 @@ get_db = make_get_db(_session_factory)
 
 def get_checkout_service(session: AsyncSession = Depends(get_db)) -> CheckoutService:
     return CheckoutService(transactions=TransactionRepository(session), settings=settings)
+
+
+def get_webhook_service(session: AsyncSession = Depends(get_db)) -> WebhookService:
+    return WebhookService(transactions=TransactionRepository(session), settings=settings)

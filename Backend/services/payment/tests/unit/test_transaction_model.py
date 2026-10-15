@@ -18,6 +18,7 @@ def test_transaction_columns_match_the_sql_baseline():
         "amount",
         "payment_method",
         "plan_code",
+        "provider_txn_ref",
         "status",
         "created_at",
     }
