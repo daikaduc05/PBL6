@@ -3,38 +3,12 @@
 from __future__ import annotations
 
 import uuid
-from decimal import Decimal
 
 import pytest
 from payment.config import PaymentSettings
-from payment.models.transaction import Transaction
 from payment.plans import PLANS
 from payment.services.checkout_service import CheckoutService, PaymentNotConfiguredError
-
-
-class FakeTransactionRepository:
-    def __init__(self) -> None:
-        self._by_id: dict[uuid.UUID, Transaction] = {}
-
-    async def create(
-        self, *, user_id: uuid.UUID, amount: Decimal, payment_method: str, plan_code: str
-    ) -> Transaction:
-        transaction = Transaction(
-            id=uuid.uuid4(),
-            user_id=user_id,
-            amount=amount,
-            payment_method=payment_method,
-            plan_code=plan_code,
-            status="PENDING",
-        )
-        self._by_id[transaction.id] = transaction
-        return transaction
-
-    async def get_by_id(self, transaction_id: uuid.UUID) -> Transaction | None:
-        return self._by_id.get(transaction_id)
-
-    async def save(self, transaction: Transaction) -> None:
-        self._by_id[transaction.id] = transaction
+from payment_fakes import FakeTransactionRepository
 
 
 def make_settings(*, mock_payment: bool = True) -> PaymentSettings:

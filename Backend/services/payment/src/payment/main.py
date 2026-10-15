@@ -3,6 +3,7 @@ from pbl6_common.errors import register_exception_handlers
 from pbl6_common.logging import RequestIdMiddleware, configure_logging
 
 from payment.api.v1.payments import router as payments_router
+from payment.api.v1.webhooks import router as webhooks_router
 from payment.config import get_settings
 from payment.deps import engine
 
@@ -15,8 +16,9 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(payments_router, prefix="/api/v1")
+    app.include_router(webhooks_router, prefix="/api/v1")
 
-    # Webhook (T30) / outbox worker (T31) land later.
+    # Outbox worker (T31) lands later.
 
     @app.get("/health")
     async def health():

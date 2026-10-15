@@ -11,6 +11,13 @@ that when it's actually needed.
 baseline. There's still no `plans` table (see payment.plans for the
 hardcoded catalogue); this column just remembers which one was bought, so
 T31's event publish can look up its duration_days later.
+
+`provider_txn_ref` was added in migration 0003 (T30) — the gateway's own
+transaction id (vnp_TransactionNo / MoMo transId), recorded the first time
+a webhook for this transaction is processed so a redelivered webhook is a
+no-op instead of double-applying (backend.md §12: "idempotent on
+provider_txn_ref"). Nullable + unique: null until a webhook lands,
+Postgres allows any number of nulls under a unique constraint.
 """
 
 from __future__ import annotations
@@ -54,6 +61,7 @@ class Transaction(Base):
     payment_method: Mapped[str] = mapped_column(String, nullable=False)
     plan_code: Mapped[str] = mapped_column(String, nullable=False, server_default="VIP_1_MONTH")
     status: Mapped[str] = mapped_column(String, nullable=False, default="PENDING")
+    provider_txn_ref: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
