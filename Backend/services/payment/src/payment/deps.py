@@ -26,11 +26,7 @@ get_db = make_get_db(session_factory)
 
 
 def get_checkout_service(session: AsyncSession = Depends(get_db)) -> CheckoutService:
-    return CheckoutService(
-        transactions=TransactionRepository(session),
-        outbox=OutboxRepository(session),
-        settings=settings,
-    )
+    return CheckoutService(transactions=TransactionRepository(session), settings=settings)
 
 
 def get_webhook_service(session: AsyncSession = Depends(get_db)) -> WebhookService:

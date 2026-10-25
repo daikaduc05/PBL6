@@ -23,9 +23,9 @@ create table if not exists payment.transactions (
     user_id        uuid          not null,        -- logical FK -> account.users.id
     amount         numeric(14,2) not null check (amount >= 0),   -- VND
     payment_method text          not null
-                       check (payment_method in ('VNPAY', 'MOMO')),
+                       check (payment_method in ('SEPAY')),  -- was VNPAY/MOMO through T31; migration 0005 switched to real SePay bank-transfer credentials
     plan_code      text          not null default 'VIP_1_MONTH',
-    provider_txn_ref text        unique,          -- set by T30's webhook, idempotency key
+    provider_txn_ref text        unique,          -- set by the webhook (SePay's own `id` field), idempotency key
     status         text          not null default 'PENDING'
                        check (status in ('PENDING', 'SUCCESS', 'FAILED')),
     created_at     timestamptz   not null default now()
@@ -35,7 +35,7 @@ create index if not exists transactions_user_idx   on payment.transactions (user
 create index if not exists transactions_status_idx on payment.transactions (status);
 
 comment on table  payment.transactions               is 'Checkout attempts. SUCCESS drives the VIP upgrade event.';
-comment on column payment.transactions.payment_method is 'VNPAY | MOMO';
+comment on column payment.transactions.payment_method is 'SEPAY (bank-transfer, via SePay webhook) — the only method since migration 0005';
 comment on column payment.transactions.plan_code      is 'Key into payment.plans.PLANS — which VIP plan was purchased';
 comment on column payment.transactions.provider_txn_ref is 'Gateway txn id, set on first webhook delivery — idempotency key';
 comment on column payment.transactions.status         is 'PENDING | SUCCESS | FAILED';

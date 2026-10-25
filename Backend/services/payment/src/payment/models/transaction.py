@@ -13,11 +13,17 @@ hardcoded catalogue); this column just remembers which one was bought, so
 T31's event publish can look up its duration_days later.
 
 `provider_txn_ref` was added in migration 0003 (T30) — the gateway's own
-transaction id (vnp_TransactionNo / MoMo transId), recorded the first time
-a webhook for this transaction is processed so a redelivered webhook is a
-no-op instead of double-applying (backend.md §12: "idempotent on
-provider_txn_ref"). Nullable + unique: null until a webhook lands,
-Postgres allows any number of nulls under a unique constraint.
+transaction id (vnp_TransactionNo / MoMo transId then, SePay's own `id`
+field now), recorded the first time a webhook for this transaction is
+processed so a redelivered webhook is a no-op instead of double-applying
+(backend.md §12: "idempotent on provider_txn_ref"). Nullable + unique:
+null until a webhook lands, Postgres allows any number of nulls under a
+unique constraint.
+
+`payment_method` was VNPAY/MOMO through T29/T30/T31; migration 0005
+switches it to SEPAY only (real bank-transfer credentials — see that
+migration's docstring for why VNPay/Momo were dropped, not just added
+to).
 """
 
 from __future__ import annotations
@@ -31,7 +37,7 @@ from sqlalchemy import CheckConstraint, DateTime, Numeric, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-PAYMENT_METHODS = ("VNPAY", "MOMO")
+PAYMENT_METHODS = ("SEPAY",)
 STATUSES = ("PENDING", "SUCCESS", "FAILED")
 
 

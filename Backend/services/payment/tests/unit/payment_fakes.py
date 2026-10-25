@@ -49,7 +49,7 @@ class FakeTransactionRepository:
             id=kwargs.pop("id", uuid.uuid4()),
             user_id=kwargs.pop("user_id", uuid.uuid4()),
             amount=kwargs.pop("amount", Decimal("299000")),
-            payment_method=kwargs.pop("payment_method", "VNPAY"),
+            payment_method=kwargs.pop("payment_method", "SEPAY"),
             plan_code=kwargs.pop("plan_code", "VIP_1_MONTH"),
             status=kwargs.pop("status", "PENDING"),
             provider_txn_ref=kwargs.pop("provider_txn_ref", None),

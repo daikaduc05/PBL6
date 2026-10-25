@@ -1,6 +1,6 @@
-"""T29 — HTTP layer only, no business logic (backend.md §3 layering rule).
+"""HTTP layer only, no business logic (backend.md §3 layering rule).
 
-    POST /api/v1/payments/checkout   authenticated -> { redirect_url }
+    POST /api/v1/payments/checkout   authenticated -> VietQR payment info
 
 "authenticated" means the gateway has verified the JWT and forwarded
 X-User-Id (backend.md §7). There is no gateway yet (T08/T09), so until it
@@ -26,13 +26,6 @@ async def checkout(
     user: UserContext = Depends(get_current_user),
     svc: CheckoutService = Depends(get_checkout_service),
 ):
-    transaction = await svc.checkout(
-        user_id=uuid.UUID(user.user_id),
-        plan_code=body.plan_code,
-        payment_method=body.payment_method,
-    )
-    return CheckoutResponse(
-        transaction_id=transaction.id,
-        redirect_url=svc.build_redirect_url(transaction),
-        status=transaction.status,
-    )
+    transaction = await svc.checkout(user_id=uuid.UUID(user.user_id), plan_code=body.plan_code)
+    info = svc.build_payment_info(transaction)
+    return CheckoutResponse(transaction_id=transaction.id, status=transaction.status, **info)

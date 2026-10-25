@@ -6,23 +6,21 @@ from pbl6_common.config import BaseServiceSettings
 class PaymentSettings(BaseServiceSettings):
     """Payment service reads the same env vars as every service, plus:
 
-    mock_payment: real VNPay/Momo integration isn't available yet (no
-    working sandbox credentials — see T29's commit for why), so this
-    defaults to True. Checkout marks the transaction SUCCESS immediately
-    and skips the real gateway round-trip entirely (backend.md's
-    documented fallback for exactly this situation).
+    sepay_webhook_secret: HMAC-SHA256 secret for verifying SePay's webhook
+    signature (payment.webhooks.sepay.verify_signature). A real secret —
+    set only via .env, never committed.
 
-    vnpay_hash_secret / momo_access_key / momo_secret_key: used by T30's
-    webhook signature verification. Placeholder defaults since there's no
-    real sandbox account — set real values once one exists.
+    sepay_account_number / sepay_bank_code: the bank account SePay
+    monitors, used to build each checkout's VietQR code. Not a security
+    secret (the QR itself displays this to anyone who scans it), but
+    still a real person's real bank account number — placeholder
+    defaults here too, same as the webhook secret, so it never ends up
+    committed; set real values only via .env.
     """
 
-    mock_payment: bool = True
-    checkout_result_url: str = "http://localhost:3000/checkout/result"
-
-    vnpay_hash_secret: str = "change-me-vnpay-hash-secret"
-    momo_access_key: str = "change-me-momo-access-key"
-    momo_secret_key: str = "change-me-momo-secret-key"
+    sepay_webhook_secret: str = "change-me-sepay-webhook-secret"
+    sepay_account_number: str = "change-me-sepay-account-number"
+    sepay_bank_code: str = "change-me-sepay-bank-code"
 
 
 @lru_cache
