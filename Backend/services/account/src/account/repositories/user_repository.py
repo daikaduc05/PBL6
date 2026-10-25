@@ -4,6 +4,7 @@ layering rule: api -> services -> repositories -> models)."""
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
 from account.models.user import User
 from sqlalchemy import func, or_, select
@@ -66,3 +67,20 @@ class UserRepository:
         stmt = base.order_by(User.created_at.desc()).offset((page - 1) * size).limit(size)
         result = await self._session.execute(stmt)
         return list(result.scalars().all()), total or 0
+
+    async def list_expired_vip(self, *, now: datetime, limit: int = 500) -> list[User]:
+        """T27's 00:00 sweep target: VIP users whose time has already run
+        out. Batched via `limit` so one sweep tick can't try to load an
+        unbounded number of rows if VIP numbers ever get large."""
+        stmt = (
+            select(User)
+            .where(
+                User.is_vip.is_(True),
+                User.vip_expired_at.is_not(None),
+                User.vip_expired_at < now,
+                User.deleted_at.is_(None),
+            )
+            .limit(limit)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
