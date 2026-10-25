@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<p style="margin: 0 0 12px; font-size: 15px; color: #374151; line-height: 1.6;">
+  Chào {{ full_name }},
+</p>
+<p style="margin: 0 0 12px; font-size: 15px; color: #374151; line-height: 1.6;">
+  Chúng tôi đã nhận được thanh toán {{ "{:,.0f}".format(amount_vnd) }}đ cho gói
+  {{ plan_name }} ({{ duration_days }} ngày).
+</p>
+<!--
+  Wording stays deliberately neutral. The account service upgrades the tier by
+  consuming the same event we did, so the two can land seconds apart — the user
+  may click through before VIP is visible (backend.md §2: VIP is eventually
+  consistent). Promising "you are VIP now" would sometimes be a lie.
+-->
+<p style="margin: 0 0 24px; font-size: 15px; color: #374151; line-height: 1.6;">
+  Quyền VIP sẽ được kích hoạt trong ít phút. Nếu sau 5 phút vẫn chưa thấy,
+  hãy đăng xuất rồi đăng nhập lại.
+</p>
+<table role="presentation" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="background: #2563eb; border-radius: 6px;">
+      <a href="{{ app_url }}/lessons"
+         style="display: inline-block; padding: 12px 24px; font-size: 15px; color: #ffffff; text-decoration: none;">
+        Khám phá bài học VIP
+      </a>
+    </td>
+  </tr>
+</table>
+{% endblock %}
