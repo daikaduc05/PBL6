@@ -78,10 +78,12 @@ async def update_editor(
 async def update_editor_status(
     user_id: uuid.UUID,
     body: UpdateStatusRequest,
-    _: UserContext = Depends(_require_admin),
+    admin: UserContext = Depends(_require_admin),
     svc: AdminEditorService = Depends(get_admin_editor_service),
 ):
-    return await svc.set_status(user_id, status=body.status)
+    return await svc.set_status(
+        user_id, status=body.status, locked_by=uuid.UUID(admin.user_id), reason=body.reason
+    )
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

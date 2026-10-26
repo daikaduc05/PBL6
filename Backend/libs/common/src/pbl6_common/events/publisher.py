@@ -1,10 +1,9 @@
 """Generic publish-side plumbing for the `pbl6.events` exchange
 (backend.md §6: topic, durable; routing key == event_type).
 
-Deliberately thin: a service's own outbox/relay code owns retry and
-at-least-once semantics (see payment.outbox.relay). This module only knows
-how to declare the shared exchange and put one already-built envelope on
-the wire.
+Deliberately thin: a service's own outbox/relay or direct-publish code owns
+retry semantics. This module only knows how to declare the shared exchange
+and put one already-built envelope on the wire.
 """
 
 from __future__ import annotations
