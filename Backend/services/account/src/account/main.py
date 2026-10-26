@@ -4,6 +4,11 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import aio_pika
+from fastapi import FastAPI
+from pbl6_common.errors import register_exception_handlers
+from pbl6_common.events import consume_forever, declare_consumer_topology, get_exchange
+from pbl6_common.logging import RequestIdMiddleware, configure_logging
+
 from account.api.v1.admin_editors import router as admin_editors_router
 from account.api.v1.admin_users import router as admin_users_router
 from account.api.v1.auth import router as auth_router
@@ -11,10 +16,6 @@ from account.api.v1.users import router as users_router
 from account.config import get_settings
 from account.deps import engine, session_factory, set_exchange
 from account.events.consumer_wiring import QUEUE_NAME, ROUTING_KEYS, make_payment_succeeded_handler
-from fastapi import FastAPI
-from pbl6_common.errors import register_exception_handlers
-from pbl6_common.events import consume_forever, declare_consumer_topology, get_exchange
-from pbl6_common.logging import RequestIdMiddleware, configure_logging
 
 logger = logging.getLogger(__name__)
 

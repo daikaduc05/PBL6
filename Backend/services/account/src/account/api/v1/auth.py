@@ -6,6 +6,8 @@ POST /api/v1/auth/refresh    public
 POST /api/v1/auth/logout     public (idempotent — revokes the given refresh token)
 """
 
+from fastapi import APIRouter, Depends, status
+
 from account.deps import get_auth_service
 from account.schemas.auth import (
     LoginRequest,
@@ -15,7 +17,6 @@ from account.schemas.auth import (
     TokenPairResponse,
 )
 from account.services.auth_service import AuthService
-from fastapi import APIRouter, Depends, status
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

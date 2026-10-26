@@ -12,8 +12,9 @@ from __future__ import annotations
 
 import uuid
 
-from account.models.processed_event import ProcessedEvent
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from account.models.processed_event import ProcessedEvent
 
 
 class ProcessedEventRepository:
