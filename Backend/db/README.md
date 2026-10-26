@@ -16,6 +16,20 @@ DDL for all five bounded contexts of PBL6, targeting a single Supabase project.
 
 All files are idempotent (`create ... if not exists`), so re-running is safe.
 
+## These files are the baseline, not the ongoing source of truth
+
+They record what was created directly on Supabase before Alembic was wired up.
+**New schema changes go through each service's own Alembic migrations**, not
+through a new numbered file here — see `services/<name>/alembic/versions/`.
+
+Each service's baseline revision mirrors its file above, so an environment that
+already ran this SQL uses `alembic stamp <baseline>` and only later revisions
+are applied with `alembic upgrade head`. A fresh database (CI, a test
+container) can skip these files entirely and run `upgrade head` from empty.
+
+Example — `notification` owns a third table, `processed_events`, which exists
+only as revision `0002` because it was added after Alembic arrived.
+
 ## One Supabase project, five schemas
 
 `backend.md` §1 specifies a **database per service**. Supabase gives one database
