@@ -6,8 +6,14 @@ services:
     volumes:
       - redis_data:/data
 
-  # rabbitmq intentionally omitted until events are wired (T04/T26) — add
-  # a "rabbitmq: image: rabbitmq:3-management" service here when needed.
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672"  # management UI (guest/guest)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
 
 volumes:
   redis_data:
+  rabbitmq_data:

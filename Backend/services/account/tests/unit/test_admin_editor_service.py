@@ -77,14 +77,23 @@ class FakeUserRepository:
         return user
 
 
-def make_service() -> tuple[AdminEditorService, FakeUserRepository]:
+class FakeEventPublisher:
+    def __init__(self) -> None:
+        self.published: list[tuple[str, dict]] = []
+
+    async def publish(self, event_type: str, data: dict) -> None:
+        self.published.append((event_type, data))
+
+
+def make_service() -> tuple[AdminEditorService, FakeUserRepository, FakeEventPublisher]:
     users = FakeUserRepository()
-    return AdminEditorService(users=users), users
+    publisher = FakeEventPublisher()
+    return AdminEditorService(users=users, publisher=publisher), users, publisher
 
 
 @pytest.mark.asyncio
 async def test_create_editor_sets_role_and_hashes_password():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     editor = await service.create_editor(
         email="editor@vidu.com", password="password123", full_name="Editor One"
     )
@@ -95,7 +104,7 @@ async def test_create_editor_sets_role_and_hashes_password():
 
 @pytest.mark.asyncio
 async def test_create_editor_rejects_duplicate_email():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     users.seed(email="dup@vidu.com", role="CUSTOMER")
     with pytest.raises(ConflictError):
         await service.create_editor(email="Dup@vidu.com", password="password123", full_name="X")
@@ -103,7 +112,7 @@ async def test_create_editor_rejects_duplicate_email():
 
 @pytest.mark.asyncio
 async def test_list_editors_excludes_customers_and_deleted():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     users.seed(role="EDITOR")
     users.seed(role="CUSTOMER")
     deleted = users.seed(role="EDITOR")
@@ -116,7 +125,7 @@ async def test_list_editors_excludes_customers_and_deleted():
 
 @pytest.mark.asyncio
 async def test_get_editor_404_for_customer():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     student = users.seed(role="CUSTOMER")
     with pytest.raises(NotFoundError):
         await service.get_editor(student.id)
@@ -124,7 +133,7 @@ async def test_get_editor_404_for_customer():
 
 @pytest.mark.asyncio
 async def test_update_editor_changes_full_name():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     editor = users.seed(role="EDITOR", full_name="Old")
     updated = await service.update_editor(editor.id, full_name="New")
     assert updated.full_name == "New"
@@ -132,15 +141,31 @@ async def test_update_editor_changes_full_name():
 
 @pytest.mark.asyncio
 async def test_set_status_locks_editor():
-    service, users = make_service()
+    service, users, publisher = make_service()
     editor = users.seed(role="EDITOR", status="ACTIVE")
-    updated = await service.set_status(editor.id, status="LOCKED")
+    admin_id = uuid.uuid4()
+
+    updated = await service.set_status(editor.id, status="LOCKED", locked_by=admin_id)
+
     assert updated.status == "LOCKED"
+    assert publisher.published == [
+        ("account.locked", {"user_id": str(editor.id), "locked_by": str(admin_id), "reason": None})
+    ]
+
+
+@pytest.mark.asyncio
+async def test_set_status_unlocks_editor_publishes_account_unlocked():
+    service, users, publisher = make_service()
+    editor = users.seed(role="EDITOR", status="LOCKED")
+
+    await service.set_status(editor.id, status="ACTIVE")
+
+    assert publisher.published == [("account.unlocked", {"user_id": str(editor.id)})]
 
 
 @pytest.mark.asyncio
 async def test_list_editors_filters_by_status():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     users.seed(role="EDITOR", full_name="Active Editor", status="ACTIVE")
     users.seed(role="EDITOR", full_name="Locked Editor", status="LOCKED")
 
@@ -151,7 +176,7 @@ async def test_list_editors_filters_by_status():
 
 @pytest.mark.asyncio
 async def test_list_editors_search_matches_name_or_email():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     users.seed(role="EDITOR", full_name="Nguyen Van A", email="a@vidu.com")
     users.seed(role="EDITOR", full_name="Tran Thi B", email="b@vidu.com")
 
@@ -162,7 +187,7 @@ async def test_list_editors_search_matches_name_or_email():
 
 @pytest.mark.asyncio
 async def test_delete_editor_soft_deletes():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     editor = users.seed(role="EDITOR")
     await service.delete_editor(editor.id)
     with pytest.raises(NotFoundError):

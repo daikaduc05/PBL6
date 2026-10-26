@@ -71,10 +71,12 @@ async def update_student(
 async def update_student_status(
     user_id: uuid.UUID,
     body: UpdateStatusRequest,
-    _: UserContext = Depends(_require_admin),
+    admin: UserContext = Depends(_require_admin),
     svc: AdminUserService = Depends(get_admin_user_service),
 ):
-    return await svc.set_status(user_id, status=body.status)
+    return await svc.set_status(
+        user_id, status=body.status, locked_by=uuid.UUID(admin.user_id), reason=body.reason
+    )
 
 
 @router.patch("/{user_id}/vip", response_model=UserProfileResponse)
