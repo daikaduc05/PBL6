@@ -1,7 +1,7 @@
-"""Structural (Protocol) type for UserRepository — service constructors
-type-hint against this, not the concrete class, so a unit test's fake
-repository satisfies the check by shape instead of needing to inherit from
-it (same reasoning as pbl6_common.security.RefreshTokenDenylistProtocol)."""
+"""Structural (Protocol) types for account's repositories — service
+constructors type-hint against these, not the concrete classes, so a unit
+test's fake repository satisfies the check by shape instead of needing to
+inherit from it (same pattern as payment.repositories.protocols)."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from account.models.user import User
 
 class UserRepositoryProtocol(Protocol):
     async def get_by_email(self, email: str) -> User | None: ...
+
     async def get_by_id(self, user_id: uuid.UUID) -> User | None: ...
 
     async def create(
@@ -30,3 +31,9 @@ class UserRepositoryProtocol(Protocol):
         status: str | None = None,
         q: str | None = None,
     ) -> tuple[list[User], int]: ...
+
+
+class ProcessedEventRepositoryProtocol(Protocol):
+    async def already_processed(self, event_id: uuid.UUID) -> bool: ...
+
+    async def mark_processed(self, *, event_id: uuid.UUID, event_type: str) -> None: ...

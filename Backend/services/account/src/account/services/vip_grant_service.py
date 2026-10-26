@@ -18,13 +18,20 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from account.repositories.processed_event_repository import ProcessedEventRepository
-from account.repositories.user_repository import UserRepository
 from sqlalchemy.exc import IntegrityError
+
+from account.repositories.protocols import (
+    ProcessedEventRepositoryProtocol,
+    UserRepositoryProtocol,
+)
 
 
 class VipGrantService:
-    def __init__(self, users: UserRepository, processed_events: ProcessedEventRepository):
+    def __init__(
+        self,
+        users: UserRepositoryProtocol,
+        processed_events: ProcessedEventRepositoryProtocol,
+    ):
         self._users = users
         self._processed_events = processed_events
 
@@ -43,8 +50,9 @@ class VipGrantService:
             raise LookupError(f"payment.succeeded for unknown user_id={user_id}")
 
         now = datetime.now(UTC)
-        has_time_left = user.is_vip and user.vip_expired_at and user.vip_expired_at > now
-        base = user.vip_expired_at if has_time_left else now
+        base = now
+        if user.is_vip and user.vip_expired_at is not None and user.vip_expired_at > now:
+            base = user.vip_expired_at
         user.is_vip = True
         user.vip_expired_at = base + timedelta(days=duration_days)
         await self._users.save(user)

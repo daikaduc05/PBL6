@@ -10,14 +10,15 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+from pbl6_common.errors import NotFoundError
+
 from account.events.publisher import EventPublisherProtocol
 from account.models.user import User
-from account.repositories.user_repository import UserRepository
-from pbl6_common.errors import NotFoundError
+from account.repositories.protocols import UserRepositoryProtocol
 
 
 class AdminUserService:
-    def __init__(self, users: UserRepository, publisher: EventPublisherProtocol):
+    def __init__(self, users: UserRepositoryProtocol, publisher: EventPublisherProtocol):
         self._users = users
         self._publisher = publisher
 
