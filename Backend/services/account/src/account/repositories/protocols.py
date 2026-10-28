@@ -6,8 +6,10 @@ inherit from it (same pattern as payment.repositories.protocols)."""
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Protocol
 
+from account.models.password_reset_token import PasswordResetToken
 from account.models.user import User
 
 
@@ -37,3 +39,13 @@ class ProcessedEventRepositoryProtocol(Protocol):
     async def already_processed(self, event_id: uuid.UUID) -> bool: ...
 
     async def mark_processed(self, *, event_id: uuid.UUID, event_type: str) -> None: ...
+
+
+class PasswordResetRepositoryProtocol(Protocol):
+    async def create(
+        self, *, user_id: uuid.UUID, token_hash: str, expires_at: datetime
+    ) -> PasswordResetToken: ...
+
+    async def get_valid(self, token_hash: str) -> PasswordResetToken | None: ...
+
+    async def mark_used(self, entry: PasswordResetToken) -> None: ...

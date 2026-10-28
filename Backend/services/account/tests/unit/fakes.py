@@ -14,6 +14,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+from account.models.password_reset_token import PasswordResetToken
 from account.models.user import User
 
 
@@ -84,6 +85,42 @@ class FakeUserRepository:
         )
         self._by_id[user.id] = user
         return user
+
+
+class FakePasswordResetRepository:
+    def __init__(self) -> None:
+        self._by_hash: dict[str, PasswordResetToken] = {}
+
+    async def create(
+        self, *, user_id: uuid.UUID, token_hash: str, expires_at: datetime
+    ) -> PasswordResetToken:
+        entry = PasswordResetToken(
+            token_hash=token_hash,
+            user_id=user_id,
+            expires_at=expires_at,
+            created_at=datetime.now(UTC),
+        )
+        self._by_hash[token_hash] = entry
+        return entry
+
+    async def get_valid(self, token_hash: str) -> PasswordResetToken | None:
+        entry = self._by_hash.get(token_hash)
+        if entry is None:
+            return None
+        if entry.used_at is not None or entry.expires_at <= datetime.now(UTC):
+            return None
+        return entry
+
+    async def mark_used(self, entry: PasswordResetToken) -> None:
+        entry.used_at = datetime.now(UTC)
+
+
+class FakeEmailSender:
+    def __init__(self) -> None:
+        self.sent: list[dict[str, str]] = []
+
+    async def send(self, *, to: str, subject: str, body: str) -> None:
+        self.sent.append({"to": to, "subject": subject, "body": body})
 
 
 class FakeDenylist:
