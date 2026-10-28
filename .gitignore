@@ -10,6 +10,7 @@ dist/
 build/
 .expo/
 *.log
+*.tsbuildinfo
 
 # Python (Backend)
 __pycache__/
