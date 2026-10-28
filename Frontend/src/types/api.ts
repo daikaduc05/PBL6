@@ -50,7 +50,7 @@ export interface Plan {
 export const PLAN: Plan = {
   code: "VIP_1_MONTH",
   name: "Gói VIP",
-  amount: 1000,
+  amount: 5000,
   duration_days: 30,
 };
 
