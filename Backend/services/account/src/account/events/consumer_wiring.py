@@ -9,11 +9,12 @@ from __future__ import annotations
 import logging
 import uuid
 
+from pbl6_common.events import EventEnvelope
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
 from account.repositories.processed_event_repository import ProcessedEventRepository
 from account.repositories.user_repository import UserRepository
 from account.services.vip_grant_service import VipGrantService
-from pbl6_common.events import EventEnvelope
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 logger = logging.getLogger(__name__)
 

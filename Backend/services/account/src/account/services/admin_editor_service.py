@@ -14,15 +14,16 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from account.events.publisher import EventPublisherProtocol
-from account.models.user import User
-from account.repositories.user_repository import UserRepository
 from pbl6_common.errors import ConflictError, NotFoundError
 from pbl6_common.security import hash_password
 
+from account.events.publisher import EventPublisherProtocol
+from account.models.user import User
+from account.repositories.protocols import UserRepositoryProtocol
+
 
 class AdminEditorService:
-    def __init__(self, users: UserRepository, publisher: EventPublisherProtocol):
+    def __init__(self, users: UserRepositoryProtocol, publisher: EventPublisherProtocol):
         self._users = users
         self._publisher = publisher
 

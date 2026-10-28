@@ -17,18 +17,22 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 
 import aio_pika
-from account.config import get_settings
-from account.events.publisher import RabbitEventPublisher
-from account.repositories.user_repository import UserRepository
-from account.services.admin_editor_service import AdminEditorService
-from account.services.admin_user_service import AdminUserService
-from account.services.auth_service import AuthService
-from account.services.user_service import UserService
 from fastapi import Depends
 from pbl6_common.db import make_engine, make_get_db, make_session_factory
 from pbl6_common.security import RefreshTokenDenylist
 from redis.asyncio import Redis, from_url
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from account.config import get_settings
+from account.email import SmtpEmailSender
+from account.events.publisher import RabbitEventPublisher
+from account.repositories.password_reset_repository import PasswordResetRepository
+from account.repositories.user_repository import UserRepository
+from account.services.admin_editor_service import AdminEditorService
+from account.services.admin_user_service import AdminUserService
+from account.services.auth_service import AuthService
+from account.services.password_reset_service import PasswordResetService
+from account.services.user_service import UserService
 
 settings = get_settings()
 engine = make_engine(settings.database_url)
@@ -80,3 +84,12 @@ def get_admin_editor_service(
     publisher: RabbitEventPublisher = Depends(get_event_publisher),
 ) -> AdminEditorService:
     return AdminEditorService(users=UserRepository(session), publisher=publisher)
+
+
+def get_password_reset_service(session: AsyncSession = Depends(get_db)) -> PasswordResetService:
+    return PasswordResetService(
+        users=UserRepository(session),
+        tokens=PasswordResetRepository(session),
+        email_sender=SmtpEmailSender(settings),
+        settings=settings,
+    )
