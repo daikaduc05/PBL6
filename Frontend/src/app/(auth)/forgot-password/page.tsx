@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   return (
-    <Card>
+    <Card className="shadow-lg">
       <CardHeader>
         <CardTitle>Quên mật khẩu</CardTitle>
         <CardDescription>Nhập email để nhận hướng dẫn đặt lại mật khẩu.</CardDescription>

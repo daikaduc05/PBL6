@@ -48,7 +48,7 @@ function CheckoutResult() {
 
   if (!txId || !checkoutInfo) {
     return (
-      <Card className="mx-auto max-w-md">
+      <Card className="mx-auto max-w-md shadow-lg">
         <CardContent className="py-8 text-center text-text-muted">
           Không tìm thấy thông tin giao dịch.{" "}
           <Link href="/checkout" className="text-primary hover:underline">
@@ -62,11 +62,18 @@ function CheckoutResult() {
 
   if (profile?.is_vip) {
     return (
-      <Card className="mx-auto max-w-md">
-        <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-          <CheckCircle2 className="size-12 text-success" aria-hidden />
-          <h1 className="text-xl font-bold text-text">Thanh toán thành công!</h1>
-          <p className="text-text-muted">Tài khoản của bạn đã được nâng cấp lên VIP.</p>
+      <Card className="mx-auto max-w-md shadow-lg">
+        <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+          <div className="relative">
+            <div aria-hidden className="absolute inset-0 -z-10 rounded-full bg-success/25 blur-2xl" />
+            <span className="flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-success to-emerald-400 shadow-md">
+              <CheckCircle2 className="size-9 text-success-foreground" aria-hidden />
+            </span>
+          </div>
+          <h1 className="text-h1 text-text">Thanh toán thành công!</h1>
+          <p className="text-body-sm text-text-muted">
+            Tài khoản của bạn đã được nâng cấp lên VIP.
+          </p>
           <Button asChild className="mt-2">
             <Link href="/profile">Về trang cá nhân</Link>
           </Button>
@@ -76,7 +83,7 @@ function CheckoutResult() {
   }
 
   return (
-    <Card className="mx-auto max-w-md">
+    <Card className="mx-auto max-w-md shadow-lg">
       <CardHeader className="text-center">
         <CardTitle>Quét mã để thanh toán</CardTitle>
         <CardDescription>
@@ -84,16 +91,18 @@ function CheckoutResult() {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-4">
-        <Image
-          src={checkoutInfo.qr_code_url}
-          alt="Mã QR thanh toán VietQR"
-          width={240}
-          height={240}
-          className="rounded-md border border-border"
-          unoptimized
-        />
+        <div className="rounded-lg border border-border bg-background p-3 shadow-sm">
+          <Image
+            src={checkoutInfo.qr_code_url}
+            alt="Mã QR thanh toán VietQR"
+            width={220}
+            height={220}
+            className="rounded-sm"
+            unoptimized
+          />
+        </div>
 
-        <div className="w-full space-y-2 rounded-md bg-surface-2 p-4 text-sm">
+        <div className="w-full space-y-2 rounded-md bg-surface-2 p-4 text-body-sm">
           <div className="flex justify-between">
             <span className="text-text-muted">Số tiền</span>
             <span className="font-semibold text-text">{formatVnd(checkoutInfo.amount)}</span>
@@ -118,7 +127,7 @@ function CheckoutResult() {
         </div>
 
         {exhausted ? (
-          <div className="w-full rounded-md border border-warning/30 bg-warning/10 p-3 text-center text-sm text-warning">
+          <div className="w-full rounded-md border border-warning/30 bg-warning/10 p-3 text-center text-body-sm text-warning">
             Giao dịch có thể mất thêm chút thời gian để xác nhận. VIP sẽ tự động kích hoạt ngay khi
             hệ thống nhận được thanh toán.
             <Button variant="link" className="mt-1 block" onClick={() => window.location.reload()}>
@@ -126,7 +135,7 @@ function CheckoutResult() {
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-sm text-text-muted">
+          <div className="flex items-center gap-2 text-body-sm text-text-muted">
             <Spinner className="size-4" />
             Đang chờ xác nhận thanh toán…
           </div>

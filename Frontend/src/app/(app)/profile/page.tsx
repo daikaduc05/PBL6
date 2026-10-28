@@ -5,17 +5,16 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Crown } from "lucide-react";
+import { Crown, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label, FieldError } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { VipBadge } from "@/components/ui/badge";
 import { useProfile, useUpdateProfile, useChangePassword } from "@/hooks/use-profile";
 import { useToast } from "@/hooks/use-toast";
 import { errorMessageFor } from "@/lib/error-messages";
-import { formatDate } from "@/lib/utils";
+import { formatDate, cn } from "@/lib/utils";
 import { ClientApiError } from "@/lib/api-client";
 
 const profileSchema = z.object({ full_name: z.string().min(1, "Vui lòng nhập họ tên.").max(200) });
@@ -76,29 +75,48 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold text-text">Thông tin cá nhân</h1>
+      <h1 className="text-h1 text-text">Thông tin cá nhân</h1>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Trạng thái VIP</CardTitle>
-            <CardDescription>
-              {profile.is_vip && profile.vip_expired_at
-                ? `Hết hạn ngày ${formatDate(profile.vip_expired_at)}`
-                : "Bạn chưa có gói VIP."}
-            </CardDescription>
+      <Card
+        className={cn(
+          "overflow-hidden",
+          profile.is_vip && "border-secondary/40 bg-gradient-to-br from-secondary/15 to-surface",
+        )}
+      >
+        <CardContent className="flex items-center justify-between gap-4 p-6">
+          <div className="flex items-center gap-4">
+            <span
+              className={cn(
+                "flex size-12 shrink-0 items-center justify-center rounded-full",
+                profile.is_vip
+                  ? "bg-gradient-to-br from-secondary to-amber-400 shadow-md"
+                  : "bg-surface-2",
+              )}
+            >
+              {profile.is_vip ? (
+                <Crown className="size-6 text-secondary-foreground" aria-hidden />
+              ) : (
+                <Sparkles className="size-6 text-text-muted" aria-hidden />
+              )}
+            </span>
+            <div>
+              <p className="text-h3 text-text">{profile.is_vip ? "Thành viên VIP" : "Thành viên thường"}</p>
+              <p className="text-body-sm text-text-muted">
+                {profile.is_vip && profile.vip_expired_at
+                  ? `Hết hạn ngày ${formatDate(profile.vip_expired_at)}`
+                  : "Nâng cấp để mở khoá toàn bộ nội dung."}
+              </p>
+            </div>
           </div>
-          {profile.is_vip ? (
-            <VipBadge />
-          ) : (
-            <Button asChild size="sm" variant="secondary">
+          {!profile.is_vip && (
+            <Button asChild size="sm" variant="secondary" className="shrink-0">
               <Link href="/checkout">
                 <Crown className="size-4" aria-hidden />
-                Nâng cấp VIP
+                Nâng cấp
               </Link>
             </Button>
           )}
-        </CardHeader>
+        </CardContent>
       </Card>
 
       <Card>

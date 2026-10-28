@@ -6,7 +6,7 @@ import "@/styles/globals.css";
 const inter = Inter({ subsets: ["latin", "vietnamese"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "PBL6 — English Self-Study Platform",
+  title: "English Self-Study",
   description: "Nền tảng tự học tiếng Anh",
 };
 

@@ -54,10 +54,10 @@ function LoginForm() {
   }
 
   return (
-    <Card>
+    <Card className="shadow-lg">
       <CardHeader>
         <CardTitle>Đăng nhập</CardTitle>
-        <CardDescription>Chào mừng bạn quay lại PBL6.</CardDescription>
+        <CardDescription>Chào mừng bạn quay lại English Self-Study.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>

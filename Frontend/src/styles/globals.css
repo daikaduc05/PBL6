@@ -132,6 +132,47 @@
   --font-sans: "Inter", "Inter Fallback", system-ui, sans-serif;
 }
 
+/* Typography scale (design-system.md §3) as reusable utilities, e.g.
+   className="text-h1". Mirrors the table exactly — size/line-height/weight
+   — so every page gets the same type rhythm instead of ad hoc Tailwind
+   sizing. Kept byte-for-byte in sync with Design/tokens.css — see that
+   file's own copy for the sync rule. */
+@utility text-display {
+  font-size: 36px;
+  line-height: 40px;
+  font-weight: 700;
+}
+@utility text-h1 {
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 700;
+}
+@utility text-h2 {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+}
+@utility text-h3 {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+@utility text-body-lg {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 400;
+}
+@utility text-body-sm {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+}
+@utility text-caption {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+
 * {
   border-color: var(--border);
 }

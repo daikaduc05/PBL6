@@ -47,7 +47,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <Card>
+    <Card className="shadow-lg">
       <CardHeader>
         <CardTitle>Tạo tài khoản</CardTitle>
         <CardDescription>Bắt đầu hành trình tự học tiếng Anh của bạn.</CardDescription>

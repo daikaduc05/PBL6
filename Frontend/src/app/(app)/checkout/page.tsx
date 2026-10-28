@@ -1,29 +1,31 @@
 "use client";
 
-import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Check, Crown } from "lucide-react";
+import { Check, Crown, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useCheckout } from "@/hooks/use-checkout";
 import { useToast } from "@/hooks/use-toast";
 import { errorMessageFor } from "@/lib/error-messages";
-import { formatVnd, cn } from "@/lib/utils";
+import { formatVnd } from "@/lib/utils";
 import { ClientApiError } from "@/lib/api-client";
-import { PLANS, type PlanCode } from "@/types/api";
-import type { CheckoutResponse } from "@/types/api";
+import { PLAN, type CheckoutResponse } from "@/types/api";
 
-const PLAN_PERKS = ["Không giới hạn bài học VIP", "Không quảng cáo", "Hỗ trợ ưu tiên"];
+const PERKS = [
+  "Không giới hạn bài học VIP",
+  "Không quảng cáo",
+  "Hỗ trợ ưu tiên",
+  "Huy hiệu VIP trên hồ sơ",
+];
 
 export default function CheckoutPage() {
   const router = useRouter();
   const toast = useToast();
   const checkout = useCheckout();
-  const [selected, setSelected] = React.useState<PlanCode>("VIP_1_MONTH");
 
   async function handleCheckout() {
     try {
-      const result: CheckoutResponse = await checkout.mutateAsync(selected);
+      const result: CheckoutResponse = await checkout.mutateAsync(PLAN.code);
       // No GET /payments/{id} exists on the backend (ER diagram dropped
       // it) — the result page can't re-fetch, so it's handed the QR
       // payload directly via sessionStorage and reads it back.
@@ -35,49 +37,57 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-md py-4">
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-text">Nâng cấp VIP</h1>
-        <p className="mt-2 text-text-muted">Chọn gói phù hợp với bạn.</p>
+        <h1 className="text-h1 text-text">Nâng cấp VIP</h1>
+        <p className="mt-2 text-body-sm text-text-muted">
+          Mở khoá toàn bộ trải nghiệm học tiếng Anh.
+        </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {PLANS.map((plan) => {
-          const isSelected = selected === plan.code;
-          return (
-            <Card
-              key={plan.code}
-              className={cn(
-                "cursor-pointer transition-all",
-                isSelected && "border-primary ring-2 ring-primary ring-offset-2",
-              )}
-              onClick={() => setSelected(plan.code)}
-            >
-              <CardHeader className="text-center">
-                <Crown className="mx-auto size-8 text-secondary" aria-hidden />
-                <CardTitle className="mt-2">{plan.name}</CardTitle>
-                <p className="text-2xl font-bold text-text">{formatVnd(plan.amount)}</p>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-text-muted">
-                  {PLAN_PERKS.map((perk) => (
-                    <li key={perk} className="flex items-center gap-2">
-                      <Check className="size-4 text-success" aria-hidden />
-                      {perk}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <Card className="overflow-hidden shadow-lg">
+        <div className="bg-gradient-to-br from-secondary/15 via-surface to-surface">
+          <CardHeader className="flex flex-col items-center pb-6 text-center">
+            <div className="relative mb-2">
+              <div
+                aria-hidden
+                className="absolute inset-0 -z-10 rounded-full bg-secondary/30 blur-2xl"
+              />
+              <span className="flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-secondary to-amber-400 shadow-md">
+                <Crown className="size-8 text-secondary-foreground" aria-hidden />
+              </span>
+            </div>
+            <p className="text-caption uppercase tracking-wide text-text-muted">Gói VIP</p>
+            <p className="text-display text-text">{formatVnd(PLAN.amount)}</p>
+            <p className="text-body-sm text-text-muted">
+              cho {PLAN.duration_days} ngày sử dụng
+            </p>
+          </CardHeader>
+        </div>
 
-      <div className="mt-8 flex justify-center">
-        <Button size="lg" loading={checkout.isPending} onClick={handleCheckout}>
-          Thanh toán qua chuyển khoản
-        </Button>
-      </div>
+        <CardContent className="space-y-6">
+          <ul className="space-y-3">
+            {PERKS.map((perk) => (
+              <li key={perk} className="flex items-center gap-3 text-body-sm text-text">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-success/15">
+                  <Check className="size-3.5 text-success" aria-hidden />
+                </span>
+                {perk}
+              </li>
+            ))}
+          </ul>
+
+          <Button size="lg" className="w-full" loading={checkout.isPending} onClick={handleCheckout}>
+            <Crown className="size-4" aria-hidden />
+            Thanh toán qua chuyển khoản
+          </Button>
+
+          <p className="flex items-center justify-center gap-1.5 text-caption text-text-muted">
+            <ShieldCheck className="size-3.5" aria-hidden />
+            Xác nhận tự động qua chuyển khoản ngân hàng (SePay)
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

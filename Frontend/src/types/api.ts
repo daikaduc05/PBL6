@@ -31,7 +31,7 @@ export interface UserProfile {
   created_at: string;
 }
 
-export type PlanCode = "VIP_1_MONTH" | "VIP_3_MONTHS" | "VIP_12_MONTHS";
+export type PlanCode = "VIP_1_MONTH";
 
 export interface Plan {
   code: PlanCode;
@@ -42,14 +42,17 @@ export interface Plan {
 
 // Mirrors Backend/services/payment/src/payment/plans.py's PLANS catalogue —
 // the backend doesn't expose a GET /plans endpoint (ER diagram dropped the
-// `plans` table), so the display catalogue lives here too. Prices/duration
-// must match that file exactly or checkout amounts will look wrong even
-// though the real charge (computed server-side) is always correct.
-export const PLANS: Plan[] = [
-  { code: "VIP_1_MONTH", name: "Gói VIP 1 tháng", amount: 299000, duration_days: 30 },
-  { code: "VIP_3_MONTHS", name: "Gói VIP 3 tháng", amount: 799000, duration_days: 90 },
-  { code: "VIP_12_MONTHS", name: "Gói VIP 12 tháng", amount: 2990000, duration_days: 365 },
-];
+// `plans` table), so the display catalogue lives here too. Collapsed to a
+// single token-priced plan on purpose (see plans.py's docstring) so the
+// team can rehearse the real SePay bank-transfer flow for close to
+// nothing — price/duration must match that file exactly or the UI will
+// show a different number than what's actually charged.
+export const PLAN: Plan = {
+  code: "VIP_1_MONTH",
+  name: "Gói VIP",
+  amount: 1000,
+  duration_days: 30,
+};
 
 export interface CheckoutResponse {
   transaction_id: string;
