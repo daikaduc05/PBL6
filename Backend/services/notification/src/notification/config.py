@@ -9,9 +9,16 @@ class NotificationSettings(BaseServiceSettings):
     ones only M2 needs."""
 
     # --- Study reminder (T14, function 8.1) ---
+    # There is no global reminder hour: each learner stores their own in
+    # notification.settings. The scheduler wakes hourly and serves whoever
+    # asked for the hour that just started.
     reminder_cron_enabled: bool = True
-    reminder_hour: int = 20
     reminder_timezone: str = "Asia/Ho_Chi_Minh"
+
+    # Gmail blocks senders that fire hundreds of messages back to back, so a
+    # large reminder run pauses between batches.
+    email_batch_size: int = 50
+    email_batch_pause_seconds: float = 1.0
 
     # --- Email (T15, function 8.1) ---
     # "smtp" covers both Mailpit in development and Gmail in a demo; "resend"

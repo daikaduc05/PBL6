@@ -21,11 +21,8 @@ from notification.models.setting import NotificationSetting
 from notification.repositories.message_repository import MessageRepository
 from notification.repositories.setting_repository import SettingRepository
 
-# Every notification the daily reminder produces carries this exact title; the
-# cron job (T14) uses it to detect "already reminded today".
-STUDY_REMINDER_TITLE = "It's time to study"
-
 # Returned when no preferences row exists. Reading must not create one.
+# (The reminder title lives in reminder_service, which owns that feature.)
 DEFAULT_ENABLE_DAILY_REMINDER = True
 
 
@@ -80,16 +77,18 @@ class NotificationService:
         return await self._settings.get(user_id)
 
     async def update_settings(
-        self, *, user_id: uuid.UUID, enable_daily_reminder: bool
+        self, *, user_id: uuid.UUID, enable_daily_reminder: bool, reminder_hour: int
     ) -> NotificationSetting:
-        """Switch the daily reminder on or off.
+        """Set whether, and at what hour, the daily reminder arrives.
 
-        Scope: this silences the **daily study reminder** on both channels.
-        Transactional notifications — payment succeeded, VIP expired, account
-        locked — are always delivered, because a user who never learns their
-        account was locked or their card was charged is worse off than one who
-        receives a message they did not want.
+        Scope of the switch: it silences the **daily study reminder** on both
+        channels. Transactional notifications — payment succeeded, VIP expired,
+        account locked — are always delivered, because a user who never learns
+        their account was locked or their card was charged is worse off than
+        one who receives a message they did not want.
         """
         return await self._settings.upsert(
-            user_id=user_id, enable_daily_reminder=enable_daily_reminder
+            user_id=user_id,
+            enable_daily_reminder=enable_daily_reminder,
+            reminder_hour=reminder_hour,
         )

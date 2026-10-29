@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Any, cast
 
 from sqlalchemy import CursorResult, delete, func, select, update
@@ -32,6 +33,21 @@ class MessageRepository:
         self._session.add(message)
         await self._session.flush()  # populate server defaults; the request commits
         return message
+
+    async def user_ids_with_title_since(self, *, title: str, since: datetime) -> set[uuid.UUID]:
+        """Who already received a notification with this exact title today.
+
+        How the reminder job avoids sending twice when it is re-run, or when
+        the service restarts right as the hour ticks over. Matching on title
+        rather than a dedicated column because the table has no `type` field
+        (notif_spec §3) — the reminder title is a constant, not user input.
+        """
+        stmt = (
+            select(Message.user_id)
+            .where(Message.title == title, Message.created_at >= since)
+            .distinct()
+        )
+        return set((await self._session.scalars(stmt)).all())
 
     async def count(self, user_id: uuid.UUID) -> tuple[int, int]:
         """Return (total, unread) in one round-trip."""

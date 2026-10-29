@@ -17,11 +17,14 @@ from notification.services.notification_service import NotificationService
 
 settings = get_settings()
 engine = make_engine(settings.database_url)
-_session_factory = make_session_factory(engine)
+
+# Public because the hourly reminder job needs its own session: it runs outside
+# any request, so it cannot use the get_db dependency.
+session_factory = make_session_factory(engine)
 
 # Commits once per successful request and rolls back on error, so no service
 # or repository below ever calls commit() itself.
-get_db = make_get_db(_session_factory)
+get_db = make_get_db(session_factory)
 
 # Stateless and holds no connection — one instance for the process. The 20:00
 # cron (T14) and the event consumer (T16) use it directly rather than through

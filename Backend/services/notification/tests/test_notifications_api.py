@@ -223,9 +223,55 @@ async def test_settings_are_per_user(api_client):
     assert stranger_view.json()["enable_daily_reminder"] is True
 
 
+async def test_defaults_to_the_evening_hour(api_client):
+    body = (await api_client.get("/api/v1/notifications/settings", headers=headers())).json()
+
+    assert body["reminder_hour"] == 20
+
+
+async def test_learner_can_choose_their_own_reminder_hour(api_client):
+    """An early riser picks 7, a night owl picks 22."""
+    saved = await api_client.put(
+        "/api/v1/notifications/settings",
+        json={"enable_daily_reminder": True, "reminder_hour": 7},
+        headers=headers(),
+    )
+    assert saved.status_code == 200
+    assert saved.json()["reminder_hour"] == 7
+
+    read_back = await api_client.get("/api/v1/notifications/settings", headers=headers())
+    assert read_back.json()["reminder_hour"] == 7
+
+
+@pytest.mark.parametrize("hour", [-1, 24, 99])
+async def test_rejects_an_hour_outside_the_day(api_client, hour):
+    response = await api_client.put(
+        "/api/v1/notifications/settings",
+        json={"enable_daily_reminder": True, "reminder_hour": hour},
+        headers=headers(),
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.parametrize("hour", [0, 23])
+async def test_accepts_both_edges_of_the_day(api_client, hour):
+    response = await api_client.put(
+        "/api/v1/notifications/settings",
+        json={"enable_daily_reminder": True, "reminder_hour": hour},
+        headers=headers(),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["reminder_hour"] == hour
+
+
 async def test_device_token_survives_a_settings_write(api_client, session):
     """The web client must not be able to wipe the mobile push token."""
-    await make_service(session).update_settings(user_id=OWNER, enable_daily_reminder=True)
+    await make_service(session).update_settings(
+        user_id=OWNER, enable_daily_reminder=True, reminder_hour=20
+    )
     await session.execute(
         text(
             "update notification.settings set device_token = 'ExpoToken[abc]' where user_id = :uid"
