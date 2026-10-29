@@ -80,6 +80,19 @@ create index if not exists processed_events_processed_at_idx
     on account.processed_events (processed_at);
 
 comment on table account.processed_events is 'Dedup ledger for the payment.succeeded consumer (T26) — at-least-once delivery means the same event_id can arrive twice.';
+
+create table if not exists account.password_reset_tokens (
+    token_hash text        primary key,
+    user_id    uuid        not null,
+    expires_at timestamptz not null,
+    used_at    timestamptz,
+    created_at timestamptz not null default now()
+);
+
+create index if not exists password_reset_tokens_user_id_idx
+    on account.password_reset_tokens (user_id);
+
+comment on table account.password_reset_tokens is 'Password-reset tokens (hashed). A row with used_at set, or past expires_at, is no longer redeemable.';
 -- ==========================================================================
 -- 02_content.sql  —  content service (owner: Ha)
 -- Bounded context M5. Categories and lessons.
