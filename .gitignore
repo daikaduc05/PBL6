@@ -33,3 +33,4 @@ Design/mockups/
 .coverage
 coverage.xml
 htmlcov/
+coverage/
