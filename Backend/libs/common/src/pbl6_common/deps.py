@@ -37,6 +37,17 @@ async def get_current_user(
     return UserContext(user_id=x_user_id, roles=roles, tier=x_user_tier or "normal")
 
 
+async def get_optional_user(
+    x_user_id: str | None = Header(default=None),
+    x_user_roles: str | None = Header(default=None),
+    x_user_tier: str | None = Header(default=None),
+) -> UserContext | None:
+    if not x_user_id:
+        return None
+    roles = [r.strip() for r in (x_user_roles or "").split(",") if r.strip()]
+    return UserContext(user_id=x_user_id, roles=roles, tier=x_user_tier or "normal")
+
+
 def require_role(*allowed_roles: str):
     """Returns a dependency: 403s unless the caller has one of the roles.
 
