@@ -60,15 +60,21 @@ uv add --optional email aiosmtplib jinja2
 uv add --optional messaging aio-pika
 ```
 
-### 2.3. Nhà cung cấp email — cần chốt
+### 2.3. Nhà cung cấp email — đã chốt (T15)
 
-| Phương án | Ưu | Nhược | Khuyến nghị |
-|---|---|---|---|
-| **Gmail SMTP** | Miễn phí, chỉ cần App Password | Giới hạn ~500 mail/ngày, dễ bị đánh dấu spam | ✅ Đủ cho demo đồ án |
-| **Resend** | API sạch, 3000 mail/tháng free | Phải verify domain mới gửi được cho người khác; chưa verify thì chỉ gửi được tới email đã đăng ký | Dùng nếu nhóm có domain |
-| **Mailpit** | Không gửi ra ngoài, xem được ngay | Chỉ dùng được ở local | ✅ Bắt buộc cho dev/test |
+| Môi trường | Dùng gì | Cấu hình |
+|---|---|---|
+| **Dev / test** | **Mailpit** — đã thêm vào `docker-compose.yml` | `SMTP_HOST=localhost`, `SMTP_PORT=1025`, xem mail tại `localhost:8025` |
+| **Demo** | **Gmail SMTP** | `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USE_TLS=true`, dùng **App Password** chứ không phải mật khẩu tài khoản |
+| Dự phòng | Resend (`EMAIL_PROVIDER=resend`) | Đã code sẵn `ResendSender`; chưa verify domain thì chỉ gửi được tới email đã đăng ký |
 
-Kiến trúc code tách `EmailSender` thành protocol nên đổi nhà cung cấp chỉ là đổi biến môi trường `EMAIL_PROVIDER`, không sửa logic.
+Đổi nhà cung cấp chỉ là đổi biến môi trường — `EmailSender` là protocol với ba implementation, `make_sender()` chọn theo `EMAIL_PROVIDER`.
+
+**Hai quyết định trong lúc code:**
+
+Jinja2 bật `StrictUndefined`: thiếu biến trong context thì **lỗi và không gửi**, thay vì render ra chuỗi rỗng. Gửi email "Chào ," tới người dùng thật tệ hơn là không gửi gì.
+
+Autoescape bắt buộc bật: `full_name` đến từ form đăng ký, nên một cái tên chứa thẻ HTML sẽ bị chèn thẳng vào email nếu không escape.
 
 ---
 
