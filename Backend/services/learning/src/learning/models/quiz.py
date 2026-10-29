@@ -2,9 +2,10 @@ import uuid
 from datetime import UTC, datetime
 
 from pbl6_common.db import Base
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Boolean, Float
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
 
 class Quiz(Base):
     __tablename__ = "quizzes"
@@ -24,7 +25,10 @@ class Question(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     quiz_id = Column(
-        UUID(as_uuid=True), ForeignKey("learning.quizzes.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("learning.quizzes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     content = Column(Text, nullable=False)
     type = Column(String, nullable=False, default="SINGLE_CHOICE")
@@ -39,7 +43,10 @@ class Option(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     question_id = Column(
-        UUID(as_uuid=True), ForeignKey("learning.questions.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("learning.questions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     content = Column(Text, nullable=False)
     is_correct = Column(Boolean, nullable=False, default=False)

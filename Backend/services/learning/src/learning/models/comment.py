@@ -15,7 +15,10 @@ class Comment(Base):
     lesson_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     user_id = Column(UUID(as_uuid=True), nullable=False)
     parent_id = Column(
-        UUID(as_uuid=True), ForeignKey("learning.comments.id", ondelete="CASCADE"), nullable=True, index=True
+        UUID(as_uuid=True),
+        ForeignKey("learning.comments.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     content = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
