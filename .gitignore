@@ -32,3 +32,6 @@ Design/mockups/
 .coverage
 coverage.xml
 htmlcov/
+
+# Personal working notes — read locally, not part of the deliverable
+Document/
