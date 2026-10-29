@@ -43,3 +43,32 @@ comment on column account.users.role         is 'CUSTOMER | EDITOR | ADMIN';
 comment on column account.users.status       is 'ACTIVE | INACTIVE | LOCKED';
 comment on column account.users.is_vip       is 'Set by consuming payment.succeeded; eventually consistent';
 comment on column account.users.vip_expired_at is 'Null when not VIP; swept by the 00:00 VIP-expiry job';
+
+-- T26: idempotency ledger for the payment.succeeded consumer. event_id is
+-- the primary key *because* that is the dedupe mechanism — see
+-- account.src.account.models.processed_event for why.
+create table if not exists account.processed_events (
+    event_id     uuid        primary key,
+    event_type   text        not null,
+    processed_at timestamptz not null default now()
+);
+
+create index if not exists processed_events_processed_at_idx
+    on account.processed_events (processed_at);
+
+comment on table account.processed_events is 'Dedup ledger for the payment.succeeded consumer (T26) — at-least-once delivery means the same event_id can arrive twice.';
+
+-- Forgot/reset-password. Only the SHA-256 hash is stored — the raw token
+-- exists only in the emailed link. used_at makes a token single-use.
+create table if not exists account.password_reset_tokens (
+    token_hash text        primary key,
+    user_id    uuid        not null,
+    expires_at timestamptz not null,
+    used_at    timestamptz,
+    created_at timestamptz not null default now()
+);
+
+create index if not exists password_reset_tokens_user_id_idx
+    on account.password_reset_tokens (user_id);
+
+comment on table account.password_reset_tokens is 'Password-reset tokens (hashed). A row with used_at set, or past expires_at, is no longer redeemable.';

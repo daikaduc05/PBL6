@@ -10,6 +10,7 @@ dist/
 build/
 .expo/
 *.log
+*.tsbuildinfo
 
 # Python (Backend)
 __pycache__/
@@ -32,3 +33,4 @@ Design/mockups/
 .coverage
 coverage.xml
 htmlcov/
+coverage/

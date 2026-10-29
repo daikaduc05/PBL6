@@ -26,7 +26,18 @@ select = ["E", "F", "I", "UP", "B"]
 # B008 (Depends(...) in a default arg) is FastAPI's own idiom, not a bug.
 ignore = ["B008"]
 
+[tool.pytest.ini_options]
+# CI runs `pytest` from this directory, so pytest reads its config from here —
+# the per-service [tool.pytest.ini_options] blocks are only picked up when you
+# run inside that service. Without asyncio_mode here, every async test and
+# fixture collected from a service fails on CI while passing locally.
+asyncio_mode = "auto"
+
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
-exclude = "(^|/)(alembic)/"
+# Every service's Alembic directory holds a top-level `env.py` with no package
+# around it, so mypy sees "Duplicate module named env" as soon as a second
+# service gets migrations and refuses to check anything at all. Migration files
+# are also generated code that nobody hand-annotates.
+exclude = '(^|/)alembic/'
