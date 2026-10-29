@@ -100,7 +100,9 @@ export default function ProfilePage() {
               )}
             </span>
             <div>
-              <p className="text-h3 text-text">{profile.is_vip ? "Thành viên VIP" : "Thành viên thường"}</p>
+              <p className="text-h3 text-text">
+                {profile.is_vip ? "Thành viên VIP" : "Thành viên thường"}
+              </p>
               <p className="text-body-sm text-text-muted">
                 {profile.is_vip && profile.vip_expired_at
                   ? `Hết hạn ngày ${formatDate(profile.vip_expired_at)}`
