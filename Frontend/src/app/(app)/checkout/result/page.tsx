@@ -65,7 +65,10 @@ function CheckoutResult() {
       <Card className="mx-auto max-w-md shadow-lg">
         <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
           <div className="relative">
-            <div aria-hidden className="absolute inset-0 -z-10 rounded-full bg-success/25 blur-2xl" />
+            <div
+              aria-hidden
+              className="absolute inset-0 -z-10 rounded-full bg-success/25 blur-2xl"
+            />
             <span className="flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-success to-emerald-400 shadow-md">
               <CheckCircle2 className="size-9 text-success-foreground" aria-hidden />
             </span>

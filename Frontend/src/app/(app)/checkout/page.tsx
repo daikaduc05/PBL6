@@ -59,9 +59,7 @@ export default function CheckoutPage() {
             </div>
             <p className="text-caption uppercase tracking-wide text-text-muted">Gói VIP</p>
             <p className="text-display text-text">{formatVnd(PLAN.amount)}</p>
-            <p className="text-body-sm text-text-muted">
-              cho {PLAN.duration_days} ngày sử dụng
-            </p>
+            <p className="text-body-sm text-text-muted">cho {PLAN.duration_days} ngày sử dụng</p>
           </CardHeader>
         </div>
 
@@ -77,7 +75,12 @@ export default function CheckoutPage() {
             ))}
           </ul>
 
-          <Button size="lg" className="w-full" loading={checkout.isPending} onClick={handleCheckout}>
+          <Button
+            size="lg"
+            className="w-full"
+            loading={checkout.isPending}
+            onClick={handleCheckout}
+          >
             <Crown className="size-4" aria-hidden />
             Thanh toán qua chuyển khoản
           </Button>
