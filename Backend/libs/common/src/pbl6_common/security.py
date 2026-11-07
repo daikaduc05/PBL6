@@ -10,7 +10,7 @@ valid if it verifies AND its `jti` is absent from the denylist.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Protocol
 from uuid import uuid4
 
 import bcrypt
@@ -71,6 +71,15 @@ def decode_token(token: str, *, secret: str, algorithm: str, expected_type: str)
     if payload.get("type") != expected_type:
         raise InvalidTokenError(f"expected a {expected_type} token")
     return payload
+
+
+class RefreshTokenDenylistProtocol(Protocol):
+    """Structural type — service constructors type-hint against this, not
+    the concrete class, so a unit test's fake denylist satisfies the check
+    by shape instead of needing to inherit from it."""
+
+    async def revoke(self, jti: str, *, ttl_seconds: int) -> None: ...
+    async def is_revoked(self, jti: str) -> bool: ...
 
 
 class RefreshTokenDenylist:

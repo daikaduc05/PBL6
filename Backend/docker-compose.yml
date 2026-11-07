@@ -6,6 +6,14 @@ services:
     volumes:
       - redis_data:/data
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672"  # management UI (guest/guest)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
   # Fake SMTP server for development (T15). Accepts every message and shows it
   # at http://localhost:8025 instead of delivering it, so working on the study
   # reminder never sends mail to a real address.
@@ -17,8 +25,6 @@ services:
     environment:
       MP_MAX_MESSAGES: 500
 
-  # rabbitmq intentionally omitted until events are wired (T04/T26) — add
-  # a "rabbitmq: image: rabbitmq:3-management" service here when needed.
-
 volumes:
   redis_data:
+  rabbitmq_data:

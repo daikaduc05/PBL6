@@ -266,8 +266,8 @@ POST   /api/v1/quizzes/{id}/submit        authenticated  returns score immediate
 GET    /api/v1/me/attempts                authenticated
 GET    /internal/learning/last-activity   internal only
 
-POST   /api/v1/payments/checkout          authenticated  -> { redirect_url }
-POST   /api/v1/payments/webhook/{provider} public        signature-verified
+POST   /api/v1/payments/checkout          authenticated  -> VietQR code + transfer content (SePay)
+POST   /api/v1/payments/webhook/sepay     public        HMAC-signature verified
 
 GET    /api/v1/notifications              authenticated
 PATCH  /api/v1/notifications/{id}/read    authenticated
@@ -361,11 +361,9 @@ SMTP_PORT=587
 SMTP_USER=
 SMTP_PASSWORD=
 
-VNPAY_TMN_CODE=
-VNPAY_HASH_SECRET=
-MOMO_PARTNER_CODE=
-MOMO_ACCESS_KEY=
-MOMO_SECRET_KEY=
+SEPAY_WEBHOOK_SECRET=
+SEPAY_ACCOUNT_NUMBER=
+SEPAY_BANK_CODE=
 ```
 
 Secrets for CI/CD live in GitHub Actions repository secrets. **A secret must never appear in a commit.**
@@ -416,6 +414,6 @@ The `syntax` job exists so an obvious typo fails in seconds rather than after a 
 | Risk | Mitigation |
 |---|---|
 | Gateway JWT verification (T09) depends on Auth (T21) | Đức uses a locally-signed mock token with the same claims until Auth lands |
-| Payment sandbox unavailable during the demo | A `MOCK_PAYMENT=true` flag makes checkout return a fake redirect and publish `payment.succeeded` directly |
+| ~~Payment sandbox unavailable during the demo~~ — resolved | VNPay/Momo both required business registration to get sandbox credentials, which never materialized (`MOCK_PAYMENT=true` was the interim workaround). Replaced outright with SePay, a bank-transfer monitoring service needing only a personal bank account — checkout now builds a real VietQR code and the webhook is HMAC-verified against real credentials, no mock mode left |
 | VIP not applied immediately after payment | Documented as eventual consistency; the result page polls `GET /users/me` for up to 10s and shows a "processing" state |
 | Five separate migration histories drift apart | `make migrate` runs all five in a fixed order; CI runs it against a clean database on every PR |

@@ -15,8 +15,27 @@ class FakeUserRepository:
     def __init__(self):
         self._by_id: dict[uuid.UUID, User] = {}
 
+    async def get_by_email(self, email: str) -> User | None:
+        return next((u for u in self._by_id.values() if u.email.lower() == email.lower()), None)
+
     async def get_by_id(self, user_id: uuid.UUID) -> User | None:
         return self._by_id.get(user_id)
+
+    async def create(
+        self, *, email: str, password_hash: str, full_name: str, role: str = "CUSTOMER"
+    ) -> User:
+        user = User(
+            id=uuid.uuid4(),
+            email=email,
+            password_hash=password_hash,
+            full_name=full_name,
+            role=role,
+            status="ACTIVE",
+            is_vip=False,
+            created_at=datetime.now(UTC),
+        )
+        self._by_id[user.id] = user
+        return user
 
     async def save(self, user: User) -> None:
         self._by_id[user.id] = user
@@ -57,14 +76,23 @@ class FakeUserRepository:
         return user
 
 
-def make_service() -> tuple[AdminUserService, FakeUserRepository]:
+class FakeEventPublisher:
+    def __init__(self) -> None:
+        self.published: list[tuple[str, dict]] = []
+
+    async def publish(self, event_type: str, data: dict) -> None:
+        self.published.append((event_type, data))
+
+
+def make_service() -> tuple[AdminUserService, FakeUserRepository, FakeEventPublisher]:
     users = FakeUserRepository()
-    return AdminUserService(users=users), users
+    publisher = FakeEventPublisher()
+    return AdminUserService(users=users, publisher=publisher), users, publisher
 
 
 @pytest.mark.asyncio
 async def test_list_students_excludes_editors_and_deleted():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     users.seed(role="CUSTOMER")
     users.seed(role="EDITOR")
     deleted = users.seed(role="CUSTOMER")
@@ -77,7 +105,7 @@ async def test_list_students_excludes_editors_and_deleted():
 
 @pytest.mark.asyncio
 async def test_get_student_404_for_editor():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     editor = users.seed(role="EDITOR")
     with pytest.raises(NotFoundError):
         await service.get_student(editor.id)
@@ -85,14 +113,14 @@ async def test_get_student_404_for_editor():
 
 @pytest.mark.asyncio
 async def test_get_student_404_for_unknown_id():
-    service, _ = make_service()
+    service, _, _ = make_service()
     with pytest.raises(NotFoundError):
         await service.get_student(uuid.uuid4())
 
 
 @pytest.mark.asyncio
 async def test_update_student_changes_full_name():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     student = users.seed(full_name="Old")
     updated = await service.update_student(student.id, full_name="New")
     assert updated.full_name == "New"
@@ -100,15 +128,63 @@ async def test_update_student_changes_full_name():
 
 @pytest.mark.asyncio
 async def test_set_status_locks_account():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     student = users.seed(status="ACTIVE")
     updated = await service.set_status(student.id, status="LOCKED")
     assert updated.status == "LOCKED"
 
 
 @pytest.mark.asyncio
+async def test_set_status_to_locked_publishes_account_locked():
+    service, users, publisher = make_service()
+    student = users.seed(status="ACTIVE")
+    admin_id = uuid.uuid4()
+
+    await service.set_status(student.id, status="LOCKED", locked_by=admin_id, reason="spam reports")
+
+    assert publisher.published == [
+        (
+            "account.locked",
+            {"user_id": str(student.id), "locked_by": str(admin_id), "reason": "spam reports"},
+        )
+    ]
+
+
+@pytest.mark.asyncio
+async def test_set_status_away_from_locked_publishes_account_unlocked():
+    service, users, publisher = make_service()
+    student = users.seed(status="LOCKED")
+
+    await service.set_status(student.id, status="ACTIVE")
+
+    assert publisher.published == [("account.unlocked", {"user_id": str(student.id)})]
+
+
+@pytest.mark.asyncio
+async def test_set_status_plain_active_inactive_toggle_publishes_nothing():
+    """ACTIVE<->INACTIVE never touches the LOCKED boundary — not in the
+    event contract (backend.md §6 only defines account.locked/unlocked)."""
+    service, users, publisher = make_service()
+    student = users.seed(status="ACTIVE")
+
+    await service.set_status(student.id, status="INACTIVE")
+
+    assert publisher.published == []
+
+
+@pytest.mark.asyncio
+async def test_set_status_relocking_an_already_locked_account_is_a_noop():
+    service, users, publisher = make_service()
+    student = users.seed(status="LOCKED")
+
+    await service.set_status(student.id, status="LOCKED")
+
+    assert publisher.published == []
+
+
+@pytest.mark.asyncio
 async def test_set_vip_grants_and_clears_expiry_on_revoke():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     student = users.seed(is_vip=False)
 
     expiry = datetime.now(UTC) + timedelta(days=30)
@@ -123,7 +199,7 @@ async def test_set_vip_grants_and_clears_expiry_on_revoke():
 
 @pytest.mark.asyncio
 async def test_list_students_filters_by_status():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     users.seed(full_name="Active One", status="ACTIVE")
     users.seed(full_name="Locked One", status="LOCKED")
 
@@ -134,7 +210,7 @@ async def test_list_students_filters_by_status():
 
 @pytest.mark.asyncio
 async def test_list_students_search_matches_name_or_email():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     users.seed(full_name="Nguyen Van A", email="a@vidu.com")
     users.seed(full_name="Tran Thi B", email="b@vidu.com")
 
@@ -149,7 +225,7 @@ async def test_list_students_search_matches_name_or_email():
 
 @pytest.mark.asyncio
 async def test_delete_student_soft_deletes():
-    service, users = make_service()
+    service, users, _publisher = make_service()
     student = users.seed()
     await service.delete_student(student.id)
     with pytest.raises(NotFoundError):

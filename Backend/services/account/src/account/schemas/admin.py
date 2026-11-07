@@ -10,9 +10,14 @@ class UpdateStudentRequest(BaseModel):
 
 class UpdateStatusRequest(BaseModel):
     """Shared by the student (T23) and editor (T24) status endpoints — same
-    shape either way."""
+    shape either way.
+
+    `reason` is only meaningful when status="LOCKED" — it rides along on
+    the account.locked event (backend.md §6 payload: user_id, locked_by,
+    reason) for notification's audit trail. Ignored otherwise."""
 
     status: Literal["ACTIVE", "INACTIVE", "LOCKED"]
+    reason: str | None = Field(default=None, max_length=500)
 
 
 class UpdateStudentVipRequest(BaseModel):
