@@ -12,11 +12,12 @@ interim gap backend.md already calls out for T09 depending on T21.
 
 import uuid
 
+from fastapi import APIRouter, Depends, status
+from pbl6_common.deps import UserContext, get_current_user
+
 from account.deps import get_user_service
 from account.schemas.user import ChangePasswordRequest, UpdateProfileRequest, UserProfileResponse
 from account.services.user_service import UserService
-from fastapi import APIRouter, Depends, status
-from pbl6_common.deps import UserContext, get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 

@@ -7,6 +7,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from notification.models.message import MessageType
+from notification.models.setting import DEFAULT_REMINDER_HOUR
+
 
 class MessageResponse(BaseModel):
     """One in-app notification as the client sees it."""
@@ -16,6 +19,9 @@ class MessageResponse(BaseModel):
     id: UUID
     title: str
     content: str
+    # The stable label clients key icons and filters on. The title is display
+    # copy and may be reworded; this never changes meaning.
+    type: MessageType
     is_read: bool
     created_at: datetime
 
@@ -43,15 +49,24 @@ class SettingsResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     enable_daily_reminder: bool
+    reminder_hour: int = Field(description="Local hour (0-23, Asia/Ho_Chi_Minh)")
     device_token: str | None = None
 
 
 class UpdateSettingsRequest(BaseModel):
-    """Function 8.5 — the on/off switch.
+    """Function 8.5 — reminder preferences.
 
     ``device_token`` is intentionally not accepted: it is written by the mobile
     app, and letting the web client send the whole settings object would wipe
-    the push token every time someone toggled the reminder.
+    the push token every time someone changed their reminder time.
     """
 
     enable_daily_reminder: bool
+    # An early riser picks 7, a night owl picks 22. Hour precision only — the
+    # scheduler wakes once an hour, so minutes would be stored and ignored.
+    reminder_hour: int = Field(
+        default=DEFAULT_REMINDER_HOUR,
+        ge=0,
+        le=23,
+        description="Local hour to be reminded at (0-23, Asia/Ho_Chi_Minh)",
+    )

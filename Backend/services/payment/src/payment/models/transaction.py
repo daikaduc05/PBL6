@@ -1,0 +1,73 @@
+"""Maps 1:1 onto payment.transactions, created by Backend/db/04_payment.sql.
+Alembic's baseline migration (alembic/versions/) mirrors this table — the
+two must be kept in sync by hand since the live table predates Alembic here
+(same situation as account.models.user — see that file's docstring).
+
+Simplified per the ER diagram the team settled on: no `plans` table (price
+is just the raw amount per transaction) and no `outbox` table — T31 adds
+that when it's actually needed.
+
+`plan_code` was added in migration 0002 (T29) — not in the original
+baseline. There's still no `plans` table (see payment.plans for the
+hardcoded catalogue); this column just remembers which one was bought, so
+T31's event publish can look up its duration_days later.
+
+`provider_txn_ref` was added in migration 0003 (T30) — the gateway's own
+transaction id (vnp_TransactionNo / MoMo transId then, SePay's own `id`
+field now), recorded the first time a webhook for this transaction is
+processed so a redelivered webhook is a no-op instead of double-applying
+(backend.md §12: "idempotent on provider_txn_ref"). Nullable + unique:
+null until a webhook lands, Postgres allows any number of nulls under a
+unique constraint.
+
+`payment_method` was VNPAY/MOMO through T29/T30/T31; migration 0005
+switches it to SEPAY only (real bank-transfer credentials — see that
+migration's docstring for why VNPay/Momo were dropped, not just added
+to).
+"""
+
+from __future__ import annotations
+
+import uuid
+from datetime import datetime
+from decimal import Decimal
+
+from pbl6_common.db import Base
+from sqlalchemy import CheckConstraint, DateTime, Numeric, String, func
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+PAYMENT_METHODS = ("SEPAY",)
+STATUSES = ("PENDING", "SUCCESS", "FAILED")
+
+
+def _sql_in_list(values: tuple[str, ...]) -> str:
+    return ", ".join(f"'{v}'" for v in values)
+
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+    __table_args__ = (
+        CheckConstraint("amount >= 0", name="transactions_amount_check"),
+        CheckConstraint(
+            f"payment_method IN ({_sql_in_list(PAYMENT_METHODS)})",
+            name="transactions_payment_method_check",
+        ),
+        CheckConstraint(f"status IN ({_sql_in_list(STATUSES)})", name="transactions_status_check"),
+        {"schema": "payment"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    # Logical FK -> account.users.id — no cross-schema foreign key, per
+    # backend.md's bounded-context rule.
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    payment_method: Mapped[str] = mapped_column(String, nullable=False)
+    plan_code: Mapped[str] = mapped_column(String, nullable=False, server_default="VIP_1_MONTH")
+    status: Mapped[str] = mapped_column(String, nullable=False, default="PENDING")
+    provider_txn_ref: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

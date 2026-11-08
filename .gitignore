@@ -10,6 +10,7 @@ dist/
 build/
 .expo/
 *.log
+*.tsbuildinfo
 
 # Python (Backend)
 __pycache__/
@@ -32,3 +33,11 @@ Design/mockups/
 .coverage
 coverage.xml
 htmlcov/
+coverage/
+
+# Personal working notes — read locally, not part of the deliverable.
+# Shared team files stay tracked: list them below as exceptions.
+# `Document/*` rather than `Document/`: git cannot re-include a file whose
+# parent directory is itself excluded, so the negation would be ignored.
+Document/*
+!Document/*.xlsx
