@@ -7,6 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from notification.models.message import MessageType
 from notification.models.setting import DEFAULT_REMINDER_HOUR
 
 
@@ -18,6 +19,9 @@ class MessageResponse(BaseModel):
     id: UUID
     title: str
     content: str
+    # The stable label clients key icons and filters on. The title is display
+    # copy and may be reworded; this never changes meaning.
+    type: MessageType
     is_read: bool
     created_at: datetime
 

@@ -3,6 +3,7 @@
 import uuid
 
 import pytest
+from notification.models.message import MessageType
 from notification.repositories.message_repository import MessageRepository
 from notification.repositories.setting_repository import SettingRepository
 from notification.services.notification_service import NotificationService
@@ -25,14 +26,31 @@ def make_service(session) -> NotificationService:
 
 @pytest.fixture
 async def seeded(session):
-    """Three notifications for OWNER (one read) and one for STRANGER."""
+    """Three notifications for OWNER (one read, one a payment) and one for STRANGER."""
     svc = make_service(session)
     rows = [
-        await svc.create(user_id=OWNER, title="Thông báo 1", content="Nội dung 1"),
-        await svc.create(user_id=OWNER, title="Thông báo 2", content="Nội dung 2"),
-        await svc.create(user_id=OWNER, title="Thông báo 3", content="Nội dung 3"),
+        await svc.create(
+            user_id=OWNER,
+            title="Thông báo 1",
+            content="Nội dung 1",
+            type=MessageType.STUDY_REMINDER,
+        ),
+        await svc.create(
+            user_id=OWNER,
+            title="Thông báo 2",
+            content="Nội dung 2",
+            type=MessageType.STUDY_REMINDER,
+        ),
+        await svc.create(
+            user_id=OWNER,
+            title="Thanh toán thành công",
+            content="Nội dung 3",
+            type=MessageType.PAYMENT_SUCCEEDED,
+        ),
     ]
-    other = await svc.create(user_id=STRANGER, title="Của người khác", content="x")
+    other = await svc.create(
+        user_id=STRANGER, title="Của người khác", content="x", type=MessageType.STUDY_REMINDER
+    )
     await svc.mark_read(user_id=OWNER, message_id=rows[0].id)
     await session.commit()
     return {"owner": rows, "stranger": other}
@@ -66,6 +84,25 @@ async def test_unread_only_filters_and_narrows_total(api_client, seeded):
 
     assert body["total"] == 2
     assert all(item["is_read"] is False for item in body["items"])
+
+
+async def test_type_filter_narrows_to_one_kind(api_client, seeded):
+    body = (
+        await api_client.get("/api/v1/notifications?type=PAYMENT_SUCCEEDED", headers=headers())
+    ).json()
+
+    assert body["total"] == 1
+    assert [item["type"] for item in body["items"]] == ["PAYMENT_SUCCEEDED"]
+    # The badge ignores the filter: browsing payments must not zero the bell.
+    assert body["unread_count"] == 2
+
+
+async def test_unknown_type_is_rejected_not_an_empty_list(api_client, seeded):
+    """A typo'd type must 422 at the door — an empty 200 would read as
+    "no notifications" and hide the client's bug."""
+    response = await api_client.get("/api/v1/notifications?type=PAYMENT", headers=headers())
+
+    assert response.status_code == 422
 
 
 async def test_paginates_without_repeating_a_row(api_client, seeded):

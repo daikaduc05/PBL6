@@ -5,12 +5,9 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import pytest
+from notification.models.message import MessageType
 from notification.repositories.external_reader import ActiveUser
-from notification.services.reminder_service import (
-    STUDY_REMINDER_TITLE,
-    ReminderService,
-    local_day_start,
-)
+from notification.services.reminder_service import ReminderService, local_day_start
 
 VN = ZoneInfo("Asia/Ho_Chi_Minh")
 
@@ -36,11 +33,11 @@ class FakeMessageRepo:
         self.already_reminded = already_reminded or set()
         self.created: list[tuple[uuid.UUID, str]] = []
 
-    async def user_ids_with_title_since(self, *, title, since) -> set[uuid.UUID]:
+    async def user_ids_with_type_since(self, *, type, since) -> set[uuid.UUID]:
         return self.already_reminded
 
-    async def create(self, *, user_id, title, content):
-        self.created.append((user_id, title))
+    async def create(self, *, user_id, title, content, type):
+        self.created.append((user_id, type))
         return None
 
 
@@ -235,8 +232,13 @@ async def test_skips_someone_already_reminded_today():
     assert run.skipped_already_reminded == 1
 
 
-async def test_the_notification_carries_the_title_the_dedupe_looks_for():
-    """If these drift apart, the same person is reminded every hour."""
+async def test_the_notification_carries_the_type_the_dedupe_looks_for():
+    """If these drift apart, the same person is reminded every hour.
+
+    Used to assert on the title string — which was itself the hazard: dedupe
+    keyed on display copy breaks the moment anyone rewords it. The type label
+    is not display copy, so it cannot drift for cosmetic reasons.
+    """
     service, messages, _ = build(
         users=[EARLY_BIRD], by_hour={7: {EARLY_BIRD.id}}, configured={EARLY_BIRD.id}
     )
@@ -244,7 +246,7 @@ async def test_the_notification_carries_the_title_the_dedupe_looks_for():
     hour, day_start = at(7)
     await service.run(hour=hour, day_start=day_start)
 
-    assert messages.created[0][1] == STUDY_REMINDER_TITLE
+    assert messages.created[0][1] == MessageType.STUDY_REMINDER
 
 
 # --------------------------------------------------------------------------

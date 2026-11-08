@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Protocol
 
+from notification.models.message import MessageType
 from notification.models.setting import DEFAULT_REMINDER_HOUR
 from notification.repositories.external_reader import ActiveUser
 
@@ -32,9 +33,13 @@ logger = logging.getLogger(__name__)
 
 
 class MessageWriter(Protocol):
-    async def create(self, *, user_id: uuid.UUID, title: str, content: str) -> Any: ...
+    async def create(
+        self, *, user_id: uuid.UUID, title: str, content: str, type: MessageType
+    ) -> Any: ...
 
-    async def user_ids_with_title_since(self, *, title: str, since: datetime) -> set[uuid.UUID]: ...
+    async def user_ids_with_type_since(
+        self, *, type: MessageType, since: datetime
+    ) -> set[uuid.UUID]: ...
 
 
 class ReminderPreferences(Protocol):
@@ -119,8 +124,8 @@ class ReminderService:
         studied = await self._external.user_ids_studied_since(day_start)
         after_studied = [u for u in candidates if u.id not in studied]
 
-        reminded = await self._messages.user_ids_with_title_since(
-            title=STUDY_REMINDER_TITLE, since=day_start
+        reminded = await self._messages.user_ids_with_type_since(
+            type=MessageType.STUDY_REMINDER, since=day_start
         )
         recipients = [u for u in after_studied if u.id not in reminded]
 
@@ -151,6 +156,7 @@ class ReminderService:
                 user_id=user.id,
                 title=STUDY_REMINDER_TITLE,
                 content=STUDY_REMINDER_BODY,
+                type=MessageType.STUDY_REMINDER,
             )
 
         sent = await self._send_emails(recipients)
