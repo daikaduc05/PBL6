@@ -34,3 +34,6 @@ Design/mockups/
 coverage.xml
 htmlcov/
 coverage/
+
+# Local installer files
+Setap_Files.win64x86/
