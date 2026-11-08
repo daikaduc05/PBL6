@@ -26,9 +26,7 @@ class FakeMessages:
         self.created: list[dict] = []
 
     async def create(self, *, user_id, title, content, type):
-        self.created.append(
-            {"user_id": user_id, "title": title, "content": content, "type": type}
-        )
+        self.created.append({"user_id": user_id, "title": title, "content": content, "type": type})
         return None
 
 
@@ -138,9 +136,7 @@ async def test_vip_expired_shows_the_local_wall_clock():
 async def test_account_locked_includes_the_reason_when_given():
     service, messages, _ = build()
 
-    await service.apply(
-        envelope("account.locked", {"user_id": str(USER.id), "reason": "spam"})
-    )
+    await service.apply(envelope("account.locked", {"user_id": str(USER.id), "reason": "spam"}))
 
     row = messages.created[0]
     assert row["type"] == MessageType.ACCOUNT_LOCKED
@@ -173,9 +169,7 @@ async def test_a_redelivered_event_does_nothing():
     event_id = uuid.uuid4()
     service, messages, ledger = build(seen={event_id})
 
-    plan = await service.apply(
-        envelope("payment.succeeded", payment_data(), event_id=event_id)
-    )
+    plan = await service.apply(envelope("payment.succeeded", payment_data(), event_id=event_id))
 
     assert messages.created == []
     assert ledger.marked == []

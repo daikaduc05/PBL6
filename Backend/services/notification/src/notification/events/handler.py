@@ -135,9 +135,7 @@ class EventHandlerService:
         try:
             plan = await self._apply_by_type(envelope)
         except (ValidationError, ValueError) as exc:
-            raise MalformedEventError(
-                f"{envelope.event_type} {envelope.event_id}: {exc}"
-            ) from exc
+            raise MalformedEventError(f"{envelope.event_type} {envelope.event_id}: {exc}") from exc
 
         if plan is _UNKNOWN:
             logger.info("events: ignoring unrecognised event_type %s", envelope.event_type)
