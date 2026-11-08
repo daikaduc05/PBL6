@@ -48,6 +48,31 @@ class ExternalReader:
         )
         return [ActiveUser(id=r.id, email=r.email, full_name=r.full_name) for r in rows]
 
+    async def user(self, user_id: uuid.UUID) -> ActiveUser | None:
+        """Owner: Long (account service). One user, for the event consumer —
+        a payment.succeeded payload carries only the user_id, not the email
+        the confirmation should be sent to.
+
+        Future equivalent: GET /internal/account/users/{id}
+
+        No status filter, unlike active_users: a payment receipt or a lock
+        notice must reach the account it concerns even if that account is not
+        ACTIVE right now (account.locked is in fact *always* about one).
+        """
+        row = (
+            await self._session.execute(
+                text(
+                    "select id, email, full_name "
+                    "from account.users "
+                    "where id = :id and deleted_at is null"
+                ),
+                {"id": user_id},
+            )
+        ).first()
+        if row is None:
+            return None
+        return ActiveUser(id=row.id, email=row.email, full_name=row.full_name)
+
     async def user_ids_studied_since(self, since: datetime) -> set[uuid.UUID]:
         """Owner: Hà (learning service).
 
