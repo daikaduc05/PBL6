@@ -51,3 +51,4 @@ export interface MediaAsset {
   cdn_url: string;
   bytes: number;
 }
+

@@ -19,3 +19,4 @@ export function useLessons(params: LessonQueryParams = {}) {
     staleTime: 60 * 1000,
   });
 }
+
