@@ -38,6 +38,24 @@ def make_service(sender: FakeSender, **kwargs) -> tuple[EmailService, list[float
 # --------------------------------------------------------------------------
 
 
+async def test_renders_the_vip_expired_renewal_nudge():
+    """The one email a lapsed user still receives — it must carry the local
+    expiry time it was given and point at the checkout page."""
+    sender = FakeSender()
+    service, _ = make_service(sender)
+
+    assert await service.send(
+        to="lapsed@example.com",
+        template="vip_expired",
+        context={"full_name": "Lan", "expired_on": "00:00 ngày 09/11/2026"},
+    )
+
+    message = sender.sent[0]
+    assert message.subject == "Gói VIP đã hết hạn"
+    assert "00:00 ngày 09/11/2026" in message.html
+    assert f"{APP_URL}/checkout" in message.html
+
+
 async def test_renders_the_study_reminder_with_name_and_link():
     sender = FakeSender()
     service, _ = make_service(sender)

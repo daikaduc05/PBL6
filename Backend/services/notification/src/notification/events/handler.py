@@ -200,16 +200,31 @@ class EventHandlerService:
         # a person it must be their wall clock or "hết hạn lúc 17:00" reads as
         # seven hours early.
         local = data.expired_at.astimezone(self._tz)
+        expired_on = f"{local:%H:%M ngày %d/%m/%Y}"
         await self._messages.create(
             user_id=data.user_id,
             title="Gói VIP đã hết hạn",
             content=(
-                f"Gói VIP của bạn đã hết hạn lúc {local:%H:%M ngày %d/%m/%Y}. "
+                f"Gói VIP của bạn đã hết hạn lúc {expired_on}. "
                 "Gia hạn để tiếp tục học kho bài VIP nhé."
             ),
             type=MessageType.VIP_EXPIRED,
         )
-        return None
+
+        # Email matters most for exactly this notice: a lapsed user has little
+        # reason to open the app, so in-app alone mostly talks to nobody.
+        user = await self._users.user(data.user_id)
+        if user is None:
+            logger.warning("events: no account row for %s, skipping email", data.user_id)
+            return None
+        return EmailPlan(
+            to=user.email,
+            template="vip_expired",
+            # Formatted here, not in the template: the template would need the
+            # raw datetime plus timezone logic, and both texts must show the
+            # same instant anyway.
+            context={"full_name": user.full_name, "expired_on": expired_on},
+        )
 
     async def _account_locked(self, data: AccountLockedData) -> EmailPlan | None:
         detail = f" Lý do: {data.reason}." if data.reason else ""
