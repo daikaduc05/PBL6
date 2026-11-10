@@ -133,6 +133,40 @@ async def test_vip_expired_shows_the_local_wall_clock():
     assert "09/11/2026" in row["content"]  # and the day rolls over too
 
 
+async def test_vip_expired_also_owes_the_renewal_email():
+    """A lapsed user has little reason to open the app, so the in-app row alone
+    mostly talks to nobody — email is the channel that still reaches them."""
+    service, messages, _ = build()
+
+    plan = await service.apply(
+        envelope(
+            "vip.expired",
+            {"user_id": str(USER.id), "expired_at": "2026-11-08T17:00:00Z"},
+        )
+    )
+
+    assert isinstance(plan, EmailPlan)
+    assert plan.to == USER.email
+    assert plan.template == "vip_expired"
+    # Both texts must show the same instant: the email context carries the
+    # exact string the in-app content embedded.
+    assert plan.context["expired_on"] in messages.created[0]["content"]
+
+
+async def test_vip_expired_for_an_invisible_user_still_writes_the_row():
+    service, messages, _ = build(users=[])
+
+    plan = await service.apply(
+        envelope(
+            "vip.expired",
+            {"user_id": str(USER.id), "expired_at": "2026-11-08T17:00:00Z"},
+        )
+    )
+
+    assert len(messages.created) == 1
+    assert plan is None  # no address -> no email, but nothing raised
+
+
 async def test_account_locked_includes_the_reason_when_given():
     service, messages, _ = build()
 
