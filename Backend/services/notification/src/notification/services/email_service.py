@@ -51,6 +51,14 @@ TEMPLATES: dict[str, EmailTemplate] = {
         subject="Thanh toán thành công",
         heading="Cảm ơn bạn đã nâng cấp",
     ),
+    # Expiry is the one notice where email matters most: a lapsed user has
+    # little reason to open the app, so this is the only channel that still
+    # reaches them with the renewal nudge.
+    "vip_expired": EmailTemplate(
+        file="vip_expired.html",
+        subject="Gói VIP đã hết hạn",
+        heading="Hẹn gặp lại bạn ở kho bài VIP",
+    ),
 }
 
 
