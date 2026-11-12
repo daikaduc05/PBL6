@@ -14,6 +14,17 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
+  # Fake SMTP server for development (T15). Accepts every message and shows it
+  # at http://localhost:8025 instead of delivering it, so working on the study
+  # reminder never sends mail to a real address.
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025" # SMTP — services point EMAIL_PROVIDER=smtp here
+      - "8025:8025" # web UI
+    environment:
+      MP_MAX_MESSAGES: 500
+
 volumes:
   redis_data:
   rabbitmq_data:
