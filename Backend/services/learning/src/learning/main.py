@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from learning.api.internal import router as internal_router
 from learning.api.v1.comments import router as comments_router
+from learning.api.v1.favorites import router as favorites_router
 from learning.api.v1.learning import router as learning_router
 from learning.api.v1.quizzes import router as quizzes_router
 from learning.config import get_settings
@@ -19,6 +20,7 @@ def create_app() -> FastAPI:
     app.include_router(quizzes_router, prefix="/api/v1")
     app.include_router(learning_router, prefix="/api/v1")
     app.include_router(comments_router, prefix="/api/v1")
+    app.include_router(favorites_router, prefix="/api/v1")
     app.include_router(internal_router)
 
     @app.get("/health")

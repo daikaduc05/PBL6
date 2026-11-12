@@ -6,9 +6,11 @@ from __future__ import annotations
 from fastapi import Depends
 from learning.config import get_settings
 from learning.repositories.comment_repository import CommentRepository
+from learning.repositories.favorite_repository import FavoriteRepository
 from learning.repositories.history_repository import HistoryRepository
 from learning.repositories.quiz_repository import QuizRepository
 from learning.services.comment_service import CommentService
+from learning.services.favorite_service import FavoriteService
 from learning.services.learning_service import LearningService
 from learning.services.quiz_service import QuizService
 from pbl6_common.db import make_engine, make_get_db, make_session_factory
@@ -49,3 +51,13 @@ async def get_comment_service(
     comment_repo: CommentRepository = Depends(get_comment_repo),
 ) -> CommentService:
     return CommentService(comment_repo)
+
+
+async def get_favorite_repo(db: AsyncSession = Depends(get_db)) -> FavoriteRepository:
+    return FavoriteRepository(db)
+
+
+async def get_favorite_service(
+    favorite_repo: FavoriteRepository = Depends(get_favorite_repo),
+) -> FavoriteService:
+    return FavoriteService(favorite_repo)
