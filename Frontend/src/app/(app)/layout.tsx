@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-svh bg-background">
-      <Header fullName={profile.full_name} isVip={profile.is_vip} />
+      <Header user={{ fullName: profile.full_name, isVip: profile.is_vip }} />
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
     </div>
   );
