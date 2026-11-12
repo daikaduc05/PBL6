@@ -5,6 +5,7 @@ import { getSession, type SessionUser } from "@/lib/session";
 
 const ACCOUNT_BASE = process.env.ACCOUNT_SERVICE_URL ?? "http://localhost:8001/api/v1";
 const PAYMENT_BASE = process.env.PAYMENT_SERVICE_URL ?? "http://localhost:8004/api/v1";
+const NOTIFICATION_BASE = process.env.NOTIFICATION_SERVICE_URL ?? "http://localhost:8005/api/v1";
 
 export class BackendError extends Error {
   constructor(
@@ -78,6 +79,16 @@ export const paymentApi = {
     call<T>(PAYMENT_BASE, path, { ...opts, method: "POST", body }),
 };
 
+export const notificationApi = {
+  get: <T>(path: string, opts?: CallOptions) => call<T>(NOTIFICATION_BASE, path, opts),
+  put: <T>(path: string, body?: unknown, opts?: CallOptions) =>
+    call<T>(NOTIFICATION_BASE, path, { ...opts, method: "PUT", body }),
+  patch: <T>(path: string, body?: unknown, opts?: CallOptions) =>
+    call<T>(NOTIFICATION_BASE, path, { ...opts, method: "PATCH", body }),
+  del: <T>(path: string, opts?: CallOptions) =>
+    call<T>(NOTIFICATION_BASE, path, { ...opts, method: "DELETE" }),
+};
+
 const UNAUTHORIZED_BODY = {
   error: { code: "UNAUTHORIZED", message: "Not logged in", details: null, request_id: "" },
 };
@@ -93,6 +104,30 @@ export async function requireSession(): Promise<
     return { user: null, unauthorized: Response.json(UNAUTHORIZED_BODY, { status: 401 }) };
   }
   return { user, unauthorized: null };
+}
+
+/** The whole body of a session-guarded route handler: check the session,
+ * run `call`, and turn any BackendError into the shared error envelope.
+ *
+ * Every handler was repeating those same three steps verbatim, which is the
+ * kind of duplication that drifts — one handler forgetting the try/catch
+ * leaks a stack trace to the browser instead of the usual {error} shape.
+ */
+export async function proxyToBackend(
+  call: (user: SessionUser) => Promise<unknown>,
+): Promise<Response> {
+  const { user, unauthorized } = await requireSession();
+  if (unauthorized) return unauthorized;
+
+  try {
+    const body = await call(user);
+    // 204 for a backend call that answered with no content (mark-read,
+    // delete) — Response.json(undefined) would send the text "undefined".
+    if (body === undefined) return new Response(null, { status: 204 });
+    return Response.json(body);
+  } catch (err) {
+    return backendErrorResponse(err);
+  }
 }
 
 /** Route handlers call this to turn a BackendError into the same
