@@ -52,3 +52,12 @@ export interface MediaAsset {
   bytes: number;
 }
 
+export interface HistoryItem {
+  id: string;
+  user_id: string;
+  lesson_id: string;
+  highest_score: number;
+  completed_at: string;
+  lesson_title?: string;
+  level?: LessonLevel;
+}

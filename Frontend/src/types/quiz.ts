@@ -48,4 +48,3 @@ export interface QuizSubmitResponse {
   completed_at: string;
   results: QuestionResult[];
 }
-

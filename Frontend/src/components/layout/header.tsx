@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, Crown, LogOut, User } from "lucide-react";
+import { BookOpen, Crown, History, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VipBadge } from "@/components/ui/badge";
 import { Logo } from "@/components/layout/logo";
@@ -20,6 +20,7 @@ export function Header({ fullName, isVip }: { fullName: string; isVip: boolean }
 
   const navLinks = [
     { href: "/categories", label: "Bài học", icon: BookOpen },
+    { href: "/history", label: "Tiến độ", icon: History },
     { href: "/profile", label: "Hồ sơ", icon: User },
   ];
 

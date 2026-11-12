@@ -37,4 +37,3 @@ describe("LessonCard", () => {
     expect(screen.getByText("VIP")).toBeInTheDocument();
   });
 });
-

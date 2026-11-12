@@ -19,4 +19,3 @@ export function useLessonMedia(lessonId: string) {
     staleTime: 5 * 60 * 1000,
   });
 }
-

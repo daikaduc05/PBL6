@@ -38,4 +38,3 @@ export function LevelFilter({ value, onChange, className }: LevelFilterProps) {
     </div>
   );
 }
-

@@ -10,4 +10,3 @@ describe("AudioPlayer", () => {
     expect(screen.getByLabelText("Thanh tiến độ phát âm thanh")).toBeInTheDocument();
   });
 });
-
