@@ -106,6 +106,30 @@ export async function requireSession(): Promise<
   return { user, unauthorized: null };
 }
 
+/** The whole body of a session-guarded route handler: check the session,
+ * run `call`, and turn any BackendError into the shared error envelope.
+ *
+ * Every handler was repeating those same three steps verbatim, which is the
+ * kind of duplication that drifts — one handler forgetting the try/catch
+ * leaks a stack trace to the browser instead of the usual {error} shape.
+ */
+export async function proxyToBackend(
+  call: (user: SessionUser) => Promise<unknown>,
+): Promise<Response> {
+  const { user, unauthorized } = await requireSession();
+  if (unauthorized) return unauthorized;
+
+  try {
+    const body = await call(user);
+    // 204 for a backend call that answered with no content (mark-read,
+    // delete) — Response.json(undefined) would send the text "undefined".
+    if (body === undefined) return new Response(null, { status: 204 });
+    return Response.json(body);
+  } catch (err) {
+    return backendErrorResponse(err);
+  }
+}
+
 /** Route handlers call this to turn a BackendError into the same
  * {error: {...}} envelope the real backend would have sent — so the
  * browser-side api-client sees one consistent shape regardless of which
