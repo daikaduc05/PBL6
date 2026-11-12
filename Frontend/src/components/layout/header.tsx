@@ -2,13 +2,21 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, Crown, History, LogOut, User } from "lucide-react";
+import { BookOpen, Crown, History, LogOut, ShieldCheck, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VipBadge } from "@/components/ui/badge";
 import { Logo } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
 
-export function Header({ fullName, isVip }: { fullName: string; isVip: boolean }) {
+export function Header({
+  fullName,
+  isVip,
+  role,
+}: {
+  fullName: string;
+  isVip: boolean;
+  role?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -18,10 +26,15 @@ export function Header({ fullName, isVip }: { fullName: string; isVip: boolean }
     router.refresh();
   }
 
+  const isAdminOrEditor = role === "ADMIN" || role === "EDITOR";
+
   const navLinks = [
     { href: "/categories", label: "Bài học", icon: BookOpen },
     { href: "/history", label: "Tiến độ", icon: History },
     { href: "/profile", label: "Hồ sơ", icon: User },
+    ...(isAdminOrEditor
+      ? [{ href: "/admin/moderation", label: "Kiểm duyệt", icon: ShieldCheck }]
+      : []),
   ];
 
   return (
