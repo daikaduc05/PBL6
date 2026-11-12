@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
@@ -8,38 +10,42 @@ import { useNotificationSettings, useUpdateNotificationSettings } from "@/hooks/
 import { useToast } from "@/hooks/use-toast";
 import { errorMessageFor } from "@/lib/error-messages";
 import { ClientApiError } from "@/lib/api-client";
+import type { UpdateNotificationSettings } from "@/types/api";
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 
+// Only ever used while a request is in flight, never as a stand-in for
+// settings we failed to load — see the error branch below.
+const DEFAULT_ENABLED = true;
+const DEFAULT_HOUR = 20;
+
 export function ReminderSettings() {
-  const { data: settings, isLoading } = useNotificationSettings();
+  const { data: settings, isLoading, isError, refetch } = useNotificationSettings();
   const update = useUpdateNotificationSettings();
   const toast = useToast();
 
-  // Local copies so the switch and the select respond instantly; the server
-  // answer is the source of truth once it arrives.
-  const [enabled, setEnabled] = React.useState(true);
-  const [hour, setHour] = React.useState(20);
+  // A pending edit, held only while its request is in flight. Reading from
+  // the server answer the rest of the time means no second copy of the truth
+  // to fall out of step — an effect that copied the response into state used
+  // to flash the previous values for a frame after each save.
+  const [draft, setDraft] = React.useState<UpdateNotificationSettings | null>(null);
 
-  React.useEffect(() => {
-    if (settings) {
-      setEnabled(settings.enable_daily_reminder);
-      setHour(settings.reminder_hour);
-    }
-  }, [settings]);
+  const current = draft ?? settings;
+  const enabled = current?.enable_daily_reminder ?? DEFAULT_ENABLED;
+  const hour = current?.reminder_hour ?? DEFAULT_HOUR;
 
-  async function save(next: { enable_daily_reminder: boolean; reminder_hour: number }) {
+  async function save(next: UpdateNotificationSettings) {
+    setDraft(next);
     try {
       await update.mutateAsync(next);
       toast.success("Đã lưu cài đặt nhắc học.");
     } catch (err) {
       toast.error(err instanceof ClientApiError ? errorMessageFor(err.code) : "Đã có lỗi xảy ra.");
-      // Put the controls back where the server says they are, so the screen
-      // never shows a setting that was not actually stored.
-      if (settings) {
-        setEnabled(settings.enable_daily_reminder);
-        setHour(settings.reminder_hour);
-      }
+    } finally {
+      // Either way the server answer takes over again: on success it already
+      // holds `next`, on failure it still holds the old values — so the
+      // screen never shows a setting that was not actually stored.
+      setDraft(null);
     }
   }
 
@@ -48,6 +54,25 @@ export function ReminderSettings() {
       <Card>
         <CardContent className="flex justify-center py-8">
           <Spinner />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Never render defaults as if they were this user's settings: someone who
+  // picked 07:00 would be shown 20:00 and reasonably believe that is what is
+  // stored. Say the truth — we do not know yet — and offer a retry.
+  if (isError || !settings) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
+          <AlertCircle className="size-6 text-danger" aria-hidden />
+          <p className="text-body-sm text-text-muted">
+            Không tải được cài đặt nhắc học. Cài đặt hiện tại của bạn vẫn được giữ nguyên.
+          </p>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            Thử lại
+          </Button>
         </CardContent>
       </Card>
     );
@@ -71,10 +96,9 @@ export function ReminderSettings() {
             className="size-5 accent-[var(--color-primary)]"
             checked={enabled}
             disabled={update.isPending}
-            onChange={(e) => {
-              setEnabled(e.target.checked);
-              void save({ enable_daily_reminder: e.target.checked, reminder_hour: hour });
-            }}
+            onChange={(e) =>
+              void save({ enable_daily_reminder: e.target.checked, reminder_hour: hour })
+            }
           />
         </div>
 
@@ -88,11 +112,9 @@ export function ReminderSettings() {
             // clearer than hiding it, and the value is still there when the
             // user switches back on.
             disabled={!enabled || update.isPending}
-            onChange={(e) => {
-              const next = Number(e.target.value);
-              setHour(next);
-              void save({ enable_daily_reminder: enabled, reminder_hour: next });
-            }}
+            onChange={(e) =>
+              void save({ enable_daily_reminder: enabled, reminder_hour: Number(e.target.value) })
+            }
           >
             {HOURS.map((h) => (
               <option key={h} value={h}>

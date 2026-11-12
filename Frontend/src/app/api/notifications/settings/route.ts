@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { notificationApi, backendErrorResponse, requireSession } from "@/lib/backend-client";
+import { NextRequest } from "next/server";
+import { notificationApi, proxyToBackend } from "@/lib/backend-client";
 
 // GET /api/notifications/settings
 //
@@ -7,25 +7,11 @@ import { notificationApi, backendErrorResponse, requireSession } from "@/lib/bac
 // backend answers defaults rather than 404, so the UI has nothing special
 // to handle.
 export async function GET() {
-  const { user, unauthorized } = await requireSession();
-  if (unauthorized) return unauthorized;
-
-  try {
-    return NextResponse.json(await notificationApi.get("/notifications/settings", { user }));
-  } catch (err) {
-    return backendErrorResponse(err);
-  }
+  return proxyToBackend((user) => notificationApi.get("/notifications/settings", { user }));
 }
 
 // PUT /api/notifications/settings
 export async function PUT(req: NextRequest) {
-  const { user, unauthorized } = await requireSession();
-  if (unauthorized) return unauthorized;
-
   const body = await req.json();
-  try {
-    return NextResponse.json(await notificationApi.put("/notifications/settings", body, { user }));
-  } catch (err) {
-    return backendErrorResponse(err);
-  }
+  return proxyToBackend((user) => notificationApi.put("/notifications/settings", body, { user }));
 }

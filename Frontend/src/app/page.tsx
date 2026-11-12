@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BookOpen, Crown, Sparkles, UserRound } from "lucide-react";
-import { getSession } from "@/lib/session";
+import { getSession, type SessionUser } from "@/lib/session";
 import { accountApi } from "@/lib/backend-client";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,23 @@ import type { UserProfile } from "@/types/api";
 // group (whose layout redirects to /login). It renders its own Header because
 // of that, and the Header shows login/register instead of the account area
 // when there is no session.
+/** The profile is a nice-to-have here (a name and a VIP badge), not what the
+ * page is for. Unlike /profile this route has no middleware in front of it
+ * and must render for anyone, so a failing account service degrades the
+ * greeting instead of taking the front door down with it. */
+async function loadProfile(session: SessionUser | null): Promise<UserProfile | null> {
+  if (!session) return null;
+  try {
+    return await accountApi.get<UserProfile>("/users/me", { user: session });
+  } catch (err) {
+    console.error("home: could not load profile, rendering signed-out view", err);
+    return null;
+  }
+}
+
 export default async function HomePage() {
   const session = await getSession();
-  const profile = session
-    ? await accountApi.get<UserProfile>("/users/me", { user: session })
-    : null;
+  const profile = await loadProfile(session);
 
   // Signed-out visitors get the same layout with every action pointing at
   // /login — one page to maintain instead of two that drift apart.
@@ -69,8 +81,8 @@ export default async function HomePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* /lessons chưa tồn tại — trỏ sẵn để khi UI content lên thì
-                  trang này không phải sửa. */}
+              {/* /lessons does not exist yet — pointed at it anyway so this
+                  page needs no edit once the content UI lands. */}
               <Button asChild variant="outline" size="sm">
                 <Link href={learnHref}>Vào kho bài học</Link>
               </Button>
