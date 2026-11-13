@@ -67,7 +67,7 @@ async def test_build_payment_info_embeds_the_transaction_id_in_the_qr_content():
 @pytest.mark.asyncio
 async def test_build_payment_info_qr_url_carries_account_bank_amount_and_content():
     service, _ = make_service()
-    transaction = await service.checkout(user_id=uuid.uuid4(), plan_code="VIP_3_MONTHS")
+    transaction = await service.checkout(user_id=uuid.uuid4(), plan_code="VIP_1_MONTH")
 
     info = service.build_payment_info(transaction)
 
