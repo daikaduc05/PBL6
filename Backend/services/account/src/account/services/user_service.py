@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import uuid
 
-from account.models.user import User
-from account.repositories.user_repository import UserRepository
 from pbl6_common.errors import NotFoundError, UnauthorizedError
 from pbl6_common.security import hash_password, verify_password
 
+from account.models.user import User
+from account.repositories.protocols import UserRepositoryProtocol
+
 
 class UserService:
-    def __init__(self, users: UserRepository):
+    def __init__(self, users: UserRepositoryProtocol):
         self._users = users
 
     async def get_profile(self, user_id: uuid.UUID) -> User:

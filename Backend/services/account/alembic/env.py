@@ -41,8 +41,14 @@ def do_run_migrations(connection) -> None:
 
 
 async def run_migrations_online() -> None:
+    # engine.begin(), not engine.connect(): SQLAlchemy 2.0 connections use
+    # autobegin and only commit on an explicit .commit() — a bare connect()
+    # rolls back silently on exit while `alembic upgrade head` still
+    # reports success. begin() commits automatically if no exception
+    # propagates. Flagged by the notification service's README; fixed the
+    # same way in payment service's T31.
     engine: AsyncEngine = make_engine(settings.database_url)
-    async with engine.connect() as connection:
+    async with engine.begin() as connection:
         await connection.run_sync(do_run_migrations)
     await engine.dispose()
 

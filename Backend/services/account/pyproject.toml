@@ -8,6 +8,8 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "alembic>=1.13",
     "pydantic[email]>=2.9",
+    "aio-pika>=9.4",
+    "apscheduler>=3.10",
 ]
 
 [tool.uv.sources]

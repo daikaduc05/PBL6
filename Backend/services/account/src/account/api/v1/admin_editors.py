@@ -15,13 +15,14 @@ by hand when testing these directly.
 import uuid
 from typing import Literal
 
+from fastapi import APIRouter, Depends, Query, status
+from pbl6_common.deps import UserContext, require_role
+from pbl6_common.pagination import Paginated
+
 from account.deps import get_admin_editor_service
 from account.schemas.admin import CreateEditorRequest, UpdateEditorRequest, UpdateStatusRequest
 from account.schemas.user import UserProfileResponse
 from account.services.admin_editor_service import AdminEditorService
-from fastapi import APIRouter, Depends, Query, status
-from pbl6_common.deps import UserContext, require_role
-from pbl6_common.pagination import Paginated
 
 router = APIRouter(prefix="/admin/editors", tags=["admin"])
 
@@ -77,10 +78,12 @@ async def update_editor(
 async def update_editor_status(
     user_id: uuid.UUID,
     body: UpdateStatusRequest,
-    _: UserContext = Depends(_require_admin),
+    admin: UserContext = Depends(_require_admin),
     svc: AdminEditorService = Depends(get_admin_editor_service),
 ):
-    return await svc.set_status(user_id, status=body.status)
+    return await svc.set_status(
+        user_id, status=body.status, locked_by=uuid.UUID(admin.user_id), reason=body.reason
+    )
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
