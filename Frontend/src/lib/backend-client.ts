@@ -4,6 +4,8 @@ import type { ApiError } from "@/types/api";
 import { getSession, type SessionUser } from "@/lib/session";
 
 const ACCOUNT_BASE = process.env.ACCOUNT_SERVICE_URL ?? "http://localhost:8001/api/v1";
+const CONTENT_BASE = process.env.CONTENT_SERVICE_URL ?? "http://localhost:8002/api/v1";
+const LEARNING_BASE = process.env.LEARNING_SERVICE_URL ?? "http://localhost:8003/api/v1";
 const PAYMENT_BASE = process.env.PAYMENT_SERVICE_URL ?? "http://localhost:8004/api/v1";
 const NOTIFICATION_BASE = process.env.NOTIFICATION_SERVICE_URL ?? "http://localhost:8005/api/v1";
 
@@ -72,6 +74,24 @@ export const accountApi = {
     call<T>(ACCOUNT_BASE, path, { ...opts, method: "POST", body }),
   patch: <T>(path: string, body?: unknown, opts?: CallOptions) =>
     call<T>(ACCOUNT_BASE, path, { ...opts, method: "PATCH", body }),
+};
+
+export const contentApi = {
+  get: <T>(path: string, opts?: CallOptions) => call<T>(CONTENT_BASE, path, opts),
+  post: <T>(path: string, body?: unknown, opts?: CallOptions) =>
+    call<T>(CONTENT_BASE, path, { ...opts, method: "POST", body }),
+  put: <T>(path: string, body?: unknown, opts?: CallOptions) =>
+    call<T>(CONTENT_BASE, path, { ...opts, method: "PUT", body }),
+  patch: <T>(path: string, body?: unknown, opts?: CallOptions) =>
+    call<T>(CONTENT_BASE, path, { ...opts, method: "PATCH", body }),
+  delete: <T>(path: string, opts?: CallOptions) =>
+    call<T>(CONTENT_BASE, path, { ...opts, method: "DELETE" }),
+};
+
+export const learningApi = {
+  get: <T>(path: string, opts?: CallOptions) => call<T>(LEARNING_BASE, path, opts),
+  post: <T>(path: string, body?: unknown, opts?: CallOptions) =>
+    call<T>(LEARNING_BASE, path, { ...opts, method: "POST", body }),
 };
 
 export const paymentApi = {
