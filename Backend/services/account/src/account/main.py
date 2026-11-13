@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import aio_pika
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 from pbl6_common.errors import register_exception_handlers
 from pbl6_common.events import consume_forever, declare_consumer_topology, get_exchange
@@ -18,7 +19,6 @@ from account.deps import engine, get_event_publisher, session_factory, set_excha
 from account.events.consumer_wiring import QUEUE_NAME, ROUTING_KEYS, make_payment_succeeded_handler
 from account.repositories.user_repository import UserRepository
 from account.services.vip_expiry_service import VipExpiryService
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 logger = logging.getLogger(__name__)
 
