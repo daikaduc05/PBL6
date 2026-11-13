@@ -16,16 +16,13 @@ import uuid
 
 from pbl6_common.errors import NotFoundError
 
-from notification.models.message import Message
+from notification.models.message import Message, MessageType
 from notification.models.setting import NotificationSetting
 from notification.repositories.message_repository import MessageRepository
 from notification.repositories.setting_repository import SettingRepository
 
-# Every notification the daily reminder produces carries this exact title; the
-# cron job (T14) uses it to detect "already reminded today".
-STUDY_REMINDER_TITLE = "It's time to study"
-
 # Returned when no preferences row exists. Reading must not create one.
+# (The reminder title lives in reminder_service, which owns that feature.)
 DEFAULT_ENABLE_DAILY_REMINDER = True
 
 
@@ -36,23 +33,42 @@ class NotificationService:
 
     # --- function 8.2: creating notifications -----------------------------
 
-    async def create(self, *, user_id: uuid.UUID, title: str, content: str) -> Message:
-        """The single entry point for all three producers — API, the 20:00 cron
-        job and the RabbitMQ consumer — so a later change (audit trail, push
-        fan-out) lands in exactly one place."""
-        return await self._messages.create(user_id=user_id, title=title, content=content)
+    async def create(
+        self, *, user_id: uuid.UUID, title: str, content: str, type: MessageType
+    ) -> Message:
+        """The single entry point for all three producers — API, the hourly
+        reminder job and the RabbitMQ consumer — so a later change (audit
+        trail, push fan-out) lands in exactly one place.
+
+        ``type`` is required, not defaulted: the label is what every dedupe
+        and filter keys on, and a forgotten default would quietly mislabel
+        rows instead of failing here."""
+        return await self._messages.create(user_id=user_id, title=title, content=content, type=type)
 
     # --- function 8.3: viewing --------------------------------------------
 
     async def list_for_user(
-        self, *, user_id: uuid.UUID, page: int, size: int, unread_only: bool
+        self,
+        *,
+        user_id: uuid.UUID,
+        page: int,
+        size: int,
+        unread_only: bool,
+        type: MessageType | None = None,
     ) -> tuple[list[Message], int, int]:
-        """Return (items, total, unread_count)."""
-        total_all, unread_count = await self._messages.count(user_id)
-        items = await self._messages.list_for_user(
-            user_id=user_id, page=page, size=size, unread_only=unread_only
+        """Return (items, total, unread_count).
+
+        ``total`` counts rows matching the current filter — it is what drives
+        the pager. ``unread_count`` ignores the filter on purpose: the bell
+        badge must not drop to zero just because the user is browsing their
+        payment history.
+        """
+        total, unread_count = await self._messages.count(
+            user_id=user_id, unread_only=unread_only, type=type
         )
-        total = unread_count if unread_only else total_all
+        items = await self._messages.list_for_user(
+            user_id=user_id, page=page, size=size, unread_only=unread_only, type=type
+        )
         return list(items), total, unread_count
 
     async def mark_read(self, *, user_id: uuid.UUID, message_id: uuid.UUID) -> None:
@@ -80,16 +96,18 @@ class NotificationService:
         return await self._settings.get(user_id)
 
     async def update_settings(
-        self, *, user_id: uuid.UUID, enable_daily_reminder: bool
+        self, *, user_id: uuid.UUID, enable_daily_reminder: bool, reminder_hour: int
     ) -> NotificationSetting:
-        """Switch the daily reminder on or off.
+        """Set whether, and at what hour, the daily reminder arrives.
 
-        Scope: this silences the **daily study reminder** on both channels.
-        Transactional notifications — payment succeeded, VIP expired, account
-        locked — are always delivered, because a user who never learns their
-        account was locked or their card was charged is worse off than one who
-        receives a message they did not want.
+        Scope of the switch: it silences the **daily study reminder** on both
+        channels. Transactional notifications — payment succeeded, VIP expired,
+        account locked — are always delivered, because a user who never learns
+        their account was locked or their card was charged is worse off than
+        one who receives a message they did not want.
         """
         return await self._settings.upsert(
-            user_id=user_id, enable_daily_reminder=enable_daily_reminder
+            user_id=user_id,
+            enable_daily_reminder=enable_daily_reminder,
+            reminder_hour=reminder_hour,
         )

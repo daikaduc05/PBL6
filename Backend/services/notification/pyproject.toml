@@ -11,14 +11,14 @@ dependencies = [
     # zoneinfo ships no timezone database on Windows, so ZoneInfo("Asia/Ho_Chi_Minh")
     # raises ZoneInfoNotFoundError without this. The 20:00 cron (T14) needs it.
     "tzdata>=2026.4",
+    # These started as optional extras ("pulled in as the feature lands") and
+    # every feature has now landed: main.py imports all three unconditionally,
+    # so keeping them optional would just mean an install that cannot boot.
+    "apscheduler>=3.10",          # T14 study-reminder cron
+    "aiosmtplib>=3.0",            # T15 email channel
+    "jinja2>=3.1",                # T15 email templates
+    "aio-pika>=9.4",              # T16 event consumer
 ]
-
-[project.optional-dependencies]
-# Pulled in as the matching feature lands, so an unfinished feature never
-# blocks `uv sync` for the rest of the team.
-messaging = ["aio-pika>=9.4"]               # T16 event consumer
-scheduling = ["apscheduler>=3.10"]          # T14 study-reminder cron
-email = ["aiosmtplib>=3.0", "jinja2>=3.1"]  # T15 email channel
 
 [tool.uv.sources]
 pbl6-common = { workspace = true }

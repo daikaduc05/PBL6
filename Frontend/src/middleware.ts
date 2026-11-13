@@ -7,7 +7,7 @@ import { jwtVerify } from "jose";
 // which can't import "server-only" lib/session.ts (that one's for Route
 // Handlers/Server Components), so the cookie read+verify is duplicated
 // here minimally.
-const PROTECTED_PREFIXES = ["/profile", "/checkout", "/notifications"];
+const PROTECTED_PREFIXES = ["/profile", "/checkout", "/moderation", "/notifications"];
 
 const COOKIE_BASE = process.env.SESSION_COOKIE_NAME ?? "pbl6_session";
 const ACCESS_COOKIE = `${COOKIE_BASE}_access`;
@@ -38,5 +38,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/profile/:path*", "/checkout/:path*", "/notifications/:path*"],
+  matcher: ["/profile/:path*", "/checkout/:path*", "/moderation/:path*", "/notifications/:path*"],
 };

@@ -38,7 +38,13 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-svh bg-background">
-      <Header user={profile ? { fullName: profile.full_name, isVip: profile.is_vip } : undefined} />
+      <Header
+        user={
+          profile
+            ? { fullName: profile.full_name, isVip: profile.is_vip, role: profile.role }
+            : undefined
+        }
+      />
 
       <main className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
         <section className="space-y-2">
