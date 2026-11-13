@@ -55,7 +55,7 @@ async def submit_quiz(
 @router.post("", response_model=QuizAdminResponse, status_code=status.HTTP_201_CREATED)
 async def create_quiz(
     data: QuizCreate,
-    _user: UserContext = Depends(require_role("admin", "editor")),
+    _user: UserContext = Depends(require_role("ADMIN", "EDITOR")),
     service: QuizService = Depends(get_quiz_service),
 ) -> QuizAdminResponse:
     """Create a new quiz with questions and options (Editor / Admin only)."""
