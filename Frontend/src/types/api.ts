@@ -63,3 +63,51 @@ export interface CheckoutResponse {
   bank_account_number: string;
   bank_code: string;
 }
+
+// Backend/services/notification/src/notification/schemas/notification.py
+// and models/message.py (MessageType).
+
+/** Mirrors backend.md §6 routing keys one-for-one. The stable label the UI
+ * keys icons and filters on — unlike `title`, which is display copy and may
+ * be reworded at any time. */
+export type NotificationType =
+  | "STUDY_REMINDER"
+  | "PAYMENT_SUCCEEDED"
+  | "VIP_EXPIRED"
+  | "ACCOUNT_LOCKED"
+  | "ACCOUNT_UNLOCKED"
+  | "LESSON_PUBLISHED";
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  content: string;
+  type: NotificationType;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface NotificationPage {
+  items: NotificationItem[];
+  /** Rows matching the current filter. */
+  total: number;
+  page: number;
+  size: number;
+  /** Unread total, ignoring the filter — this is what the bell shows. */
+  unread_count: number;
+}
+
+export interface NotificationSettings {
+  enable_daily_reminder: boolean;
+  /** Local hour 0-23, Asia/Ho_Chi_Minh. */
+  reminder_hour: number;
+  device_token: string | null;
+}
+
+/** device_token is deliberately absent: the mobile app owns it, and sending
+ * the whole settings object from the web would wipe the push token every
+ * time someone changed their reminder time. */
+export interface UpdateNotificationSettings {
+  enable_daily_reminder: boolean;
+  reminder_hour: number;
+}

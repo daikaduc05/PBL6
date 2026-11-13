@@ -19,6 +19,8 @@ from fastapi import APIRouter, Depends, Query, status
 from pbl6_common.deps import UserContext, get_current_user
 
 from notification.deps import get_notification_service
+from notification.models.message import MessageType
+from notification.models.setting import DEFAULT_REMINDER_HOUR
 from notification.schemas.notification import (
     BulkUpdateResponse,
     MessagePage,
@@ -45,7 +47,9 @@ async def read_settings(
     row = await svc.get_settings(uuid.UUID(user.user_id))
     if row is None:
         return SettingsResponse(
-            enable_daily_reminder=DEFAULT_ENABLE_DAILY_REMINDER, device_token=None
+            enable_daily_reminder=DEFAULT_ENABLE_DAILY_REMINDER,
+            reminder_hour=DEFAULT_REMINDER_HOUR,
+            device_token=None,
         )
     return row
 
@@ -57,7 +61,9 @@ async def update_settings(
     svc: NotificationService = Depends(get_notification_service),
 ):
     return await svc.update_settings(
-        user_id=uuid.UUID(user.user_id), enable_daily_reminder=body.enable_daily_reminder
+        user_id=uuid.UUID(user.user_id),
+        enable_daily_reminder=body.enable_daily_reminder,
+        reminder_hour=body.reminder_hour,
     )
 
 
@@ -78,9 +84,12 @@ async def list_notifications(
     # Capped so a client cannot pull the whole table in one request.
     size: Annotated[int, Query(ge=1, le=100)] = 20,
     unread_only: bool = False,
+    # Being an enum, an unknown value is a 422 at the door, not an empty list
+    # the client would misread as "no notifications".
+    type: Annotated[MessageType | None, Query()] = None,
 ):
     items, total, unread_count = await svc.list_for_user(
-        user_id=uuid.UUID(user.user_id), page=page, size=size, unread_only=unread_only
+        user_id=uuid.UUID(user.user_id), page=page, size=size, unread_only=unread_only, type=type
     )
     return MessagePage(
         items=[MessageResponse.model_validate(m) for m in items],
