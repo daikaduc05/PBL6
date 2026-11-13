@@ -14,7 +14,7 @@ router = APIRouter(prefix="/media", tags=["Media"])
     "/presigned-url",
     response_model=PresignedUrlResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_role("admin", "editor"))],
+    dependencies=[Depends(require_role("ADMIN", "EDITOR"))],
 )
 async def generate_presigned_url(
     data: MediaCreateRequest,
@@ -26,7 +26,7 @@ async def generate_presigned_url(
 @router.delete(
     "/{media_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_role("admin", "editor"))],
+    dependencies=[Depends(require_role("ADMIN", "EDITOR"))],
 )
 async def delete_media(
     media_id: uuid.UUID,

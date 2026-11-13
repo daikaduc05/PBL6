@@ -83,7 +83,7 @@ async def get_lesson(
     "",
     response_model=LessonResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_role("admin", "editor"))],
+    dependencies=[Depends(require_role("ADMIN", "EDITOR"))],
 )
 async def create_lesson(
     data: LessonCreate,
@@ -95,7 +95,7 @@ async def create_lesson(
 @router.put(
     "/{lesson_id}",
     response_model=LessonResponse,
-    dependencies=[Depends(require_role("admin", "editor"))],
+    dependencies=[Depends(require_role("ADMIN", "EDITOR"))],
 )
 async def update_lesson(
     lesson_id: uuid.UUID,
@@ -108,7 +108,7 @@ async def update_lesson(
 @router.delete(
     "/{lesson_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_role("admin", "editor"))],
+    dependencies=[Depends(require_role("ADMIN", "EDITOR"))],
 )
 async def delete_lesson(
     lesson_id: uuid.UUID,
@@ -120,7 +120,7 @@ async def delete_lesson(
 @router.post(
     "/{lesson_id}/submit",
     response_model=LessonResponse,
-    dependencies=[Depends(require_role("admin", "editor"))],
+    dependencies=[Depends(require_role("ADMIN", "EDITOR"))],
 )
 async def submit_lesson(
     lesson_id: uuid.UUID,
@@ -132,7 +132,7 @@ async def submit_lesson(
 @router.post(
     "/{lesson_id}/approve",
     response_model=LessonResponse,
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[Depends(require_role("ADMIN"))],
 )
 async def approve_lesson(
     lesson_id: uuid.UUID,
@@ -144,7 +144,7 @@ async def approve_lesson(
 @router.post(
     "/{lesson_id}/reject",
     response_model=LessonResponse,
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[Depends(require_role("ADMIN"))],
 )
 async def reject_lesson(
     lesson_id: uuid.UUID,
