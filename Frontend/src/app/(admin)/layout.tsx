@@ -17,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-svh bg-background">
-      <Header fullName={profile.full_name} isVip={profile.is_vip} role={profile.role} />
+      <Header user={{ fullName: profile.full_name, isVip: profile.is_vip, role: profile.role }} />
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
     </div>
   );

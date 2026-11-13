@@ -38,9 +38,7 @@ export function Header({
     { href: "/categories", label: "Bài học", icon: BookOpen },
     { href: "/history", label: "Tiến độ", icon: History },
     { href: "/profile", label: "Hồ sơ", icon: User },
-    ...(isAdminOrEditor
-      ? [{ href: "/moderation", label: "Kiểm duyệt", icon: ShieldCheck }]
-      : []),
+    ...(isAdminOrEditor ? [{ href: "/moderation", label: "Kiểm duyệt", icon: ShieldCheck }] : []),
   ];
 
   return (
