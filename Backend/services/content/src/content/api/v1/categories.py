@@ -30,8 +30,10 @@ async def create_category(
 
 
 @router.get("", response_model=list[CategoryTreeResponse])
-async def get_categories(service: CategoryService = Depends(get_category_service)):
-    categories = await service.get_category_tree()
+async def get_categories(
+    q: str | None = None, service: CategoryService = Depends(get_category_service)
+):
+    categories = await service.get_category_tree(q=q)
     return categories
 
 

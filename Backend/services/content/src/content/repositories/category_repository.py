@@ -17,8 +17,15 @@ class CategoryRepository:
         result = await self._session.execute(select(Category).where(Category.slug == slug))
         return result.scalars().first()
 
-    async def get_all(self) -> list[Category]:
-        result = await self._session.execute(select(Category).order_by(Category.sort_order))
+    async def get_all(self, q: str | None = None) -> list[Category]:
+        query = select(Category)
+        if q:
+            from sqlalchemy import text
+
+            query = query.where(
+                Category.search_vector.op("@@")(text("plainto_tsquery('pg_catalog.english', :q)"))
+            ).params(q=q)
+        result = await self._session.execute(query.order_by(Category.sort_order))
         return list(result.scalars().all())
 
     async def create(

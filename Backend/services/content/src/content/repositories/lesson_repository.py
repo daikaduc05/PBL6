@@ -18,6 +18,7 @@ class LessonRepository:
         self,
         category_id: uuid.UUID | None = None,
         level: str | None = None,
+        q: str | None = None,
         limit: int = 20,
         offset: int = 0,
     ) -> list[Lesson]:
@@ -26,6 +27,14 @@ class LessonRepository:
             query = query.where(Lesson.category_id == category_id)
         if level:
             query = query.where(Lesson.level == level)
+        if q:
+            # Full-text search using TSVECTOR @@ plainto_tsquery
+            # Using plainto_tsquery so users don't have to write exact tsquery syntax
+            from sqlalchemy import text
+
+            query = query.where(
+                Lesson.search_vector.op("@@")(text("plainto_tsquery('pg_catalog.english', :q)"))
+            ).params(q=q)
 
         query = query.order_by(Lesson.created_at.desc()).limit(limit).offset(offset)
         result = await self._session.execute(query)

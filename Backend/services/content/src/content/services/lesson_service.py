@@ -26,11 +26,12 @@ class LessonService:
         self,
         category_id: uuid.UUID | None = None,
         level: str | None = None,
+        q: str | None = None,
         limit: int = 20,
         offset: int = 0,
     ) -> list[Lesson]:
         return await self._lesson_repo.get_all(
-            category_id=category_id, level=level, limit=limit, offset=offset
+            category_id=category_id, level=level, q=q, limit=limit, offset=offset
         )
 
     async def create_lesson(self, data: LessonCreate) -> Lesson:
