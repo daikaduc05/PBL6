@@ -92,6 +92,8 @@ export const learningApi = {
   get: <T>(path: string, opts?: CallOptions) => call<T>(LEARNING_BASE, path, opts),
   post: <T>(path: string, body?: unknown, opts?: CallOptions) =>
     call<T>(LEARNING_BASE, path, { ...opts, method: "POST", body }),
+  delete: <T>(path: string, opts?: CallOptions) =>
+    call<T>(LEARNING_BASE, path, { ...opts, method: "DELETE" }),
 };
 
 export const paymentApi = {

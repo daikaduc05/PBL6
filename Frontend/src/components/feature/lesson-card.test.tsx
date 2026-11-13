@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LessonCard } from "@/components/feature/lesson-card";
 import type { Lesson } from "@/types/content";
+
+function renderWithClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 describe("LessonCard", () => {
   const mockLesson: Lesson = {
@@ -17,7 +29,7 @@ describe("LessonCard", () => {
   };
 
   it("renders lesson title and level correctly", () => {
-    render(<LessonCard lesson={mockLesson} />);
+    renderWithClient(<LessonCard lesson={mockLesson} />);
     expect(screen.getByText("English Grammar: Present Simple")).toBeInTheDocument();
     expect(screen.getByText("Cơ bản")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Vào học bài/i })).toHaveAttribute(
@@ -33,7 +45,7 @@ describe("LessonCard", () => {
       title: "Business English Masterclass",
       access: "vip",
     };
-    render(<LessonCard lesson={vipLesson} />);
+    renderWithClient(<LessonCard lesson={vipLesson} />);
     expect(screen.getByText("VIP")).toBeInTheDocument();
   });
 });

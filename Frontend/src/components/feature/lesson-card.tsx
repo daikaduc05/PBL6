@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BookOpen, ArrowRight } from "lucide-react";
 import { Badge, VipBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { FavoriteButton } from "@/components/feature/favorite-button";
 import type { Lesson, LessonLevel } from "@/types/content";
 
 const LEVEL_LABELS: Record<
@@ -24,8 +25,11 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
     <Card className="group flex flex-col justify-between overflow-hidden border-border transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
       <CardHeader className="space-y-3 p-5">
         <div className="flex items-center justify-between gap-2">
-          <Badge variant={levelInfo.variant}>{levelInfo.label}</Badge>
-          {isVip && <VipBadge />}
+          <div className="flex items-center gap-2">
+            <Badge variant={levelInfo.variant}>{levelInfo.label}</Badge>
+            {isVip && <VipBadge />}
+          </div>
+          <FavoriteButton lessonId={lesson.id} />
         </div>
         <h3 className="line-clamp-2 text-h3 text-text transition-colors group-hover:text-primary">
           {lesson.title}

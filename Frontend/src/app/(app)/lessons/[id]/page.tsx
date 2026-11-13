@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge, VipBadge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { AudioPlayer } from "@/components/feature/audio-player";
+import { FavoriteButton } from "@/components/feature/favorite-button";
 import { VipGate } from "@/components/feature/vip-gate";
 import { useLesson, useLessonMedia } from "@/hooks/use-lesson";
 import { useProfile } from "@/hooks/use-profile";
@@ -89,13 +90,16 @@ export default function LessonDetailPage() {
 
       {/* Header section */}
       <header className="space-y-4 border-b border-border pb-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={levelInfo.variant}>{levelInfo.label}</Badge>
-          {isLessonVip && <VipBadge />}
-          <span className="flex items-center gap-1 text-xs text-text-muted">
-            <Calendar className="size-3.5" aria-hidden />
-            {formatDate(lesson.created_at)}
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={levelInfo.variant}>{levelInfo.label}</Badge>
+            {isLessonVip && <VipBadge />}
+            <span className="flex items-center gap-1 text-xs text-text-muted">
+              <Calendar className="size-3.5" aria-hidden />
+              {formatDate(lesson.created_at)}
+            </span>
+          </div>
+          <FavoriteButton lessonId={lesson.id} />
         </div>
 
         <h1 className="text-h1 text-text leading-tight">{lesson.title}</h1>
