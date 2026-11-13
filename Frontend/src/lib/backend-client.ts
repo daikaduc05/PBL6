@@ -72,6 +72,8 @@ export const accountApi = {
   get: <T>(path: string, opts?: CallOptions) => call<T>(ACCOUNT_BASE, path, opts),
   post: <T>(path: string, body?: unknown, opts?: CallOptions) =>
     call<T>(ACCOUNT_BASE, path, { ...opts, method: "POST", body }),
+  put: <T>(path: string, body?: unknown, opts?: CallOptions) =>
+    call<T>(ACCOUNT_BASE, path, { ...opts, method: "PUT", body }),
   patch: <T>(path: string, body?: unknown, opts?: CallOptions) =>
     call<T>(ACCOUNT_BASE, path, { ...opts, method: "PATCH", body }),
 };
