@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { accountApi } from "@/lib/backend-client";
 import { Header } from "@/components/layout/header";
+import { AdminNav } from "@/components/layout/admin-nav";
 import type { UserProfile } from "@/types/api";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -18,7 +19,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-svh bg-background">
       <Header user={{ fullName: profile.full_name, isVip: profile.is_vip, role: profile.role }} />
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <AdminNav role={profile.role} />
+        {children}
+      </main>
     </div>
   );
 }

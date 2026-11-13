@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, Crown, History, LogOut, ShieldCheck, User } from "lucide-react";
+import { Bookmark, BookOpen, Crown, History, LogOut, ShieldCheck, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VipBadge } from "@/components/ui/badge";
 import { Logo } from "@/components/layout/logo";
@@ -36,9 +36,12 @@ export function Header({
 
   const navLinks = [
     { href: "/categories", label: "Bài học", icon: BookOpen },
+    { href: "/favorites", label: "Yêu thích", icon: Bookmark },
     { href: "/history", label: "Tiến độ", icon: History },
     { href: "/profile", label: "Hồ sơ", icon: User },
-    ...(isAdminOrEditor ? [{ href: "/moderation", label: "Kiểm duyệt", icon: ShieldCheck }] : []),
+    ...(isAdminOrEditor
+      ? [{ href: "/admin/dashboard", label: "Quản trị", icon: ShieldCheck }]
+      : []),
   ];
 
   return (
@@ -52,7 +55,9 @@ export function Header({
             <nav className="flex items-center gap-1 sm:gap-2">
               {navLinks.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname.startsWith(item.href);
+                const isActive = item.href.startsWith("/admin")
+                  ? pathname.startsWith("/admin") || pathname.startsWith("/moderation")
+                  : pathname.startsWith(item.href);
                 return (
                   <Link
                     key={item.href}
