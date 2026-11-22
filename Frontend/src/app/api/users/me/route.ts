@@ -14,8 +14,8 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   const { user, unauthorized } = await requireSession();
   if (unauthorized) return unauthorized;
-  const body = await req.json();
   try {
+    const body = await req.json();
     return NextResponse.json(await accountApi.patch("/users/me", body, { user }));
   } catch (err) {
     return backendErrorResponse(err);

@@ -6,10 +6,10 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock* /app/
 COPY libs/common /app/libs/common
-COPY services/account /app/services/account
+COPY services/learning /app/services/learning
 
-WORKDIR /app/services/account
+WORKDIR /app/services/learning
 RUN uv sync --frozen --no-dev || uv sync --no-dev
 
-EXPOSE 8001
-CMD ["uv", "run", "uvicorn", "account.main:app", "--host", "0.0.0.0", "--port", "8001"]
+EXPOSE 8003
+CMD ["uv", "run", "uvicorn", "learning.main:app", "--host", "0.0.0.0", "--port", "8003"]

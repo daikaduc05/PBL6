@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { notificationApi, proxyToBackend } from "@/lib/backend-client";
+import { backendErrorResponse, notificationApi, proxyToBackend } from "@/lib/backend-client";
 
 // GET /api/notifications/settings
 //
@@ -12,6 +12,12 @@ export async function GET() {
 
 // PUT /api/notifications/settings
 export async function PUT(req: NextRequest) {
-  const body = await req.json();
-  return proxyToBackend((user) => notificationApi.put("/notifications/settings", body, { user }));
+  try {
+    const body = await req.json();
+    return proxyToBackend((user) =>
+      notificationApi.put("/notifications/settings", body, { user }),
+    );
+  } catch (err) {
+    return backendErrorResponse(err);
+  }
 }

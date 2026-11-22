@@ -63,7 +63,9 @@ export async function getSession(): Promise<SessionUser | null> {
   if (!token) return null;
 
   try {
-    const { payload } = await jwtVerify(token, secretKey());
+    const { payload } = await jwtVerify(token, secretKey(), {
+      algorithms: ["HS256"],
+    });
     if (payload.type !== "access" || typeof payload.sub !== "string") return null;
     return {
       userId: payload.sub,

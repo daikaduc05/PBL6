@@ -165,5 +165,28 @@ export function backendErrorResponse(err: unknown) {
       { status: err.status },
     );
   }
-  throw err;
+  if (err instanceof SyntaxError) {
+    return Response.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: "Dữ liệu JSON không hợp lệ hoặc để trống.",
+          details: null,
+          request_id: "",
+        },
+      },
+      { status: 400 },
+    );
+  }
+  return Response.json(
+    {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Đã xảy ra lỗi hệ thống.",
+        details: null,
+        request_id: "",
+      },
+    },
+    { status: 500 },
+  );
 }

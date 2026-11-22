@@ -1,0 +1,150 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: pbl6-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - pbl6-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: pbl6-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - pbl6-network
+
+  account-service:
+    build:
+      context: ./Backend
+      dockerfile: services/account/Dockerfile
+    container_name: pbl6-account-service
+    restart: always
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./Backend/services/account/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - pbl6-network
+
+  content-service:
+    build:
+      context: ./Backend
+      dockerfile: services/content/Dockerfile
+    container_name: pbl6-content-service
+    restart: always
+    ports:
+      - "8002:8002"
+    env_file:
+      - ./Backend/services/content/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - redis
+    networks:
+      - pbl6-network
+
+  learning-service:
+    build:
+      context: ./Backend
+      dockerfile: services/learning/Dockerfile
+    container_name: pbl6-learning-service
+    restart: always
+    ports:
+      - "8003:8003"
+    env_file:
+      - ./Backend/services/learning/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - pbl6-network
+
+  payment-service:
+    build:
+      context: ./Backend
+      dockerfile: services/payment/Dockerfile
+    container_name: pbl6-payment-service
+    restart: always
+    ports:
+      - "8004:8004"
+    env_file:
+      - ./Backend/services/payment/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - pbl6-network
+
+  notification-service:
+    build:
+      context: ./Backend
+      dockerfile: services/notification/Dockerfile
+    container_name: pbl6-notification-service
+    restart: always
+    ports:
+      - "8005:8005"
+    env_file:
+      - ./Backend/services/notification/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - pbl6-network
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: pbl6-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - ACCOUNT_SERVICE_URL=http://account-service:8001/api/v1
+      - CONTENT_SERVICE_URL=http://content-service:8002/api/v1
+      - LEARNING_SERVICE_URL=http://learning-service:8003/api/v1
+      - PAYMENT_SERVICE_URL=http://payment-service:8004/api/v1
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8005/api/v1
+      - SESSION_COOKIE_NAME=pbl6_session
+      - SESSION_JWT_SECRET=change-me-to-a-random-32-byte-string
+      - SESSION_JWT_ALGORITHM=HS256
+    depends_on:
+      - account-service
+      - content-service
+      - learning-service
+      - payment-service
+      - notification-service
+    networks:
+      - pbl6-network
+
+volumes:
+  redis_data:
+  rabbitmq_data:
+
+networks:
+  pbl6-network:
+    driver: bridge
+

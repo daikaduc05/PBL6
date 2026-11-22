@@ -41,6 +41,13 @@ class WebhookService:
     async def handle_sepay(
         self, raw_body: bytes, *, signature: str | None, timestamp: str | None
     ) -> dict[str, bool]:
+        if (
+            self._settings.sepay_webhook_secret in ("", "change-me-sepay-webhook-secret")
+            and self._settings.env != "local"
+        ):
+            logger.error("SEPAY_WEBHOOK_SECRET is not configured for non-local environment!")
+            raise UnauthorizedError("SePay webhook secret is not configured")
+
         if not sepay.verify_signature(
             raw_body,
             signature=signature,

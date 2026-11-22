@@ -6,9 +6,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { user, unauthorized } = await requireSession();
   if (unauthorized) return unauthorized;
   const { id } = await params;
-  const body = (await req.json()) as QuizSubmitRequest;
 
   try {
+    const body = (await req.json()) as QuizSubmitRequest;
     const result = await learningApi.post<QuizSubmitResponse>(`/quizzes/${id}/submit`, body, {
       user,
     });

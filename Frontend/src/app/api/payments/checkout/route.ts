@@ -4,8 +4,8 @@ import { paymentApi, backendErrorResponse, requireSession } from "@/lib/backend-
 export async function POST(req: NextRequest) {
   const { user, unauthorized } = await requireSession();
   if (unauthorized) return unauthorized;
-  const body = await req.json();
   try {
+    const body = await req.json();
     return NextResponse.json(await paymentApi.post("/payments/checkout", body, { user }));
   } catch (err) {
     return backendErrorResponse(err);
