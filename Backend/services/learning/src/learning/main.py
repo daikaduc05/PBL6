@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from learning.api.internal import router as internal_router
 from learning.api.v1.comments import router as comments_router
 from learning.api.v1.favorites import router as favorites_router
@@ -22,6 +23,10 @@ def create_app() -> FastAPI:
     app.include_router(comments_router, prefix="/api/v1")
     app.include_router(favorites_router, prefix="/api/v1")
     app.include_router(internal_router)
+
+    @app.get("/", include_in_schema=False)
+    async def root():
+        return RedirectResponse(url="/docs")
 
     @app.get("/health")
     async def health():

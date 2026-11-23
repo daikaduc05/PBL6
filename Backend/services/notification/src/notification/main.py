@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 import aio_pika
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from pbl6_common.errors import register_exception_handlers
 from pbl6_common.events import consume_forever, declare_consumer_topology
 from pbl6_common.logging import RequestIdMiddleware, configure_logging
@@ -72,6 +73,10 @@ def create_app() -> FastAPI:
     app.include_router(notifications_router, prefix="/api/v1")
     # The recommendation router (T17) mounts here too — same service, because
     # it owns no data of its own and would not justify a second container.
+
+    @app.get("/", include_in_schema=False)
+    async def root():
+        return RedirectResponse(url="/docs")
 
     @app.get("/health")
     async def health():

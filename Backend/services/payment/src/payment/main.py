@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 import aio_pika
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from pbl6_common.errors import register_exception_handlers
 from pbl6_common.events.publisher import get_exchange, publish_envelope
 from pbl6_common.logging import RequestIdMiddleware, configure_logging
@@ -64,6 +65,10 @@ def create_app() -> FastAPI:
 
     app.include_router(payments_router, prefix="/api/v1")
     app.include_router(webhooks_router, prefix="/api/v1")
+
+    @app.get("/", include_in_schema=False)
+    async def root():
+        return RedirectResponse(url="/docs")
 
     @app.get("/health")
     async def health():
