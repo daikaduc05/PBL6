@@ -8,8 +8,13 @@ from learning.schemas.activity import (
     UserLastActivityResponse,
 )
 from learning.services.learning_service import LearningService
+from pbl6_common.deps import verify_internal_secret
 
-router = APIRouter(prefix="/internal/learning", tags=["internal"])
+router = APIRouter(
+    prefix="/internal/learning",
+    tags=["internal"],
+    dependencies=[Depends(verify_internal_secret)],
+)
 
 
 @router.get(

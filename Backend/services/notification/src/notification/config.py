@@ -38,6 +38,11 @@ class NotificationSettings(BaseServiceSettings):
     # Base URL the email buttons link back to.
     app_url: str = "http://localhost:3000"
 
+    # --- Internal Service URLs (SOA HTTP contract, replacing cross-schema SQL) ---
+    account_service_url: str = "http://localhost:8001"
+    learning_service_url: str = "http://localhost:8003"
+    internal_api_secret: str = "pbl6-internal-gateway-secret"
+
     # --- Recommendation (T17) ---
     # learning.histories.highest_score is a bare double; a 0-100 scale is
     # assumed pending Hà's confirmation (notif_spec §B.1), so the thresholds

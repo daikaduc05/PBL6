@@ -12,6 +12,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
 class AppError(Exception):
@@ -44,6 +45,22 @@ class ForbiddenError(AppError):
     code = "FORBIDDEN"
 
 
+class ValidationError(AppError):
+    status_code = 422
+    code = "VALIDATION_ERROR"
+
+
+_HTTP_STATUS_CODES: dict[int, str] = {
+    400: "APP_ERROR",
+    401: "UNAUTHORIZED",
+    403: "FORBIDDEN",
+    404: "NOT_FOUND",
+    409: "CONFLICT",
+    422: "VALIDATION_ERROR",
+    429: "RATE_LIMITED",
+}
+
+
 def _envelope(code: str, message: str, details: Any, request_id: str | None) -> dict:
     return {
         "error": {
@@ -72,4 +89,14 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=422,
             content=_envelope("VALIDATION_ERROR", "Invalid request", exc.errors(), request_id),
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def handle_http_exception(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        request_id = getattr(request.state, "request_id", None)
+        code = _HTTP_STATUS_CODES.get(exc.status_code, "HTTP_ERROR")
+        message = str(exc.detail) if exc.detail else "HTTP error"
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=_envelope(code, message, None, request_id),
         )

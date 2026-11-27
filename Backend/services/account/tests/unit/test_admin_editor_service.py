@@ -149,7 +149,16 @@ async def test_set_status_locks_editor():
 
     assert updated.status == "LOCKED"
     assert publisher.published == [
-        ("account.locked", {"user_id": str(editor.id), "locked_by": str(admin_id), "reason": None})
+        (
+            "account.locked",
+            {
+                "user_id": str(editor.id),
+                "email": editor.email,
+                "full_name": editor.full_name,
+                "locked_by": str(admin_id),
+                "reason": None,
+            },
+        )
     ]
 
 
@@ -160,7 +169,16 @@ async def test_set_status_unlocks_editor_publishes_account_unlocked():
 
     await service.set_status(editor.id, status="ACTIVE")
 
-    assert publisher.published == [("account.unlocked", {"user_id": str(editor.id)})]
+    assert publisher.published == [
+        (
+            "account.unlocked",
+            {
+                "user_id": str(editor.id),
+                "email": editor.email,
+                "full_name": editor.full_name,
+            },
+        )
+    ]
 
 
 @pytest.mark.asyncio

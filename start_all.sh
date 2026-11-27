@@ -107,7 +107,7 @@ echo -e "${CLR_INFO}⚙️  Đang khởi động 5 Backend Services...${NC}"
 # Account Service (Port 8001)
 (
   cd "$ROOT_DIR/Backend/services/account"
-  exec "$UV" run uvicorn account.main:app --host 0.0.0.0 --port 8001
+  exec "$UV" run uvicorn account.main:app --host 127.0.0.1 --port 8001
 ) > "$LOG_DIR/account.log" 2>&1 &
 PID_ACCOUNT=$!
 PIDS+=("$PID_ACCOUNT")
@@ -117,7 +117,7 @@ echo -e "   ${CLR_ACCOUNT}● Account Service${NC}      đang khởi chạy trê
 # Content Service (Port 8002)
 (
   cd "$ROOT_DIR/Backend/services/content"
-  exec "$UV" run uvicorn content.main:app --host 0.0.0.0 --port 8002
+  exec "$UV" run uvicorn content.main:app --host 127.0.0.1 --port 8002
 ) > "$LOG_DIR/content.log" 2>&1 &
 PID_CONTENT=$!
 PIDS+=("$PID_CONTENT")
@@ -127,7 +127,7 @@ echo -e "   ${CLR_CONTENT}● Content Service${NC}      đang khởi chạy trê
 # Learning Service (Port 8003)
 (
   cd "$ROOT_DIR/Backend/services/learning"
-  exec "$UV" run uvicorn learning.main:app --host 0.0.0.0 --port 8003
+  exec "$UV" run uvicorn learning.main:app --host 127.0.0.1 --port 8003
 ) > "$LOG_DIR/learning.log" 2>&1 &
 PID_LEARNING=$!
 PIDS+=("$PID_LEARNING")
@@ -137,7 +137,7 @@ echo -e "   ${CLR_LEARNING}● Learning Service${NC}     đang khởi chạy tr�
 # Payment Service (Port 8004)
 (
   cd "$ROOT_DIR/Backend/services/payment"
-  exec "$UV" run uvicorn payment.main:app --host 0.0.0.0 --port 8004
+  exec "$UV" run uvicorn payment.main:app --host 127.0.0.1 --port 8004
 ) > "$LOG_DIR/payment.log" 2>&1 &
 PID_PAYMENT=$!
 PIDS+=("$PID_PAYMENT")
@@ -147,7 +147,7 @@ echo -e "   ${CLR_PAYMENT}● Payment Service${NC}      đang khởi chạy trê
 # Notification Service (Port 8005)
 (
   cd "$ROOT_DIR/Backend/services/notification"
-  exec "$UV" run uvicorn notification.main:app --host 0.0.0.0 --port 8005
+  exec "$UV" run uvicorn notification.main:app --host 127.0.0.1 --port 8005
 ) > "$LOG_DIR/notification.log" 2>&1 &
 PID_NOTIF=$!
 PIDS+=("$PID_NOTIF")

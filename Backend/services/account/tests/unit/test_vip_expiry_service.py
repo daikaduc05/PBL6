@@ -76,7 +76,15 @@ async def test_sweep_publishes_vip_expired_with_the_original_expiry():
     await service.sweep()
 
     assert publisher.published == [
-        ("vip.expired", {"user_id": str(user.id), "expired_at": lapsed.isoformat()})
+        (
+            "vip.expired",
+            {
+                "user_id": str(user.id),
+                "email": user.email,
+                "full_name": user.full_name,
+                "expired_at": lapsed.isoformat(),
+            },
+        )
     ]
 
 

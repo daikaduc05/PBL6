@@ -12,11 +12,32 @@ see `pbl6_common.db.make_get_db`. This module only has the auth pieces.
 
 from __future__ import annotations
 
+import hmac
+import os
 from dataclasses import dataclass
 
 from fastapi import Depends, Header
 
 from pbl6_common.errors import ForbiddenError, UnauthorizedError
+
+DEFAULT_INTERNAL_SECRET = "pbl6-internal-gateway-secret"
+
+
+def verify_internal_secret(
+    x_internal_secret: str | None = Header(default=None),
+) -> None:
+    """Verifies the shared secret between the BFF Gateway / peer services and
+    this microservice.
+
+    When `ENFORCE_INTERNAL_SECRET=true` (or when `X-Internal-Secret` header is
+    supplied), requests carrying a missing or mismatched secret are rejected
+    with 401 Unauthorized, preventing direct `X-User-Roles: ADMIN` spoofing.
+    """
+    expected = os.getenv("INTERNAL_API_SECRET", DEFAULT_INTERNAL_SECRET)
+    enforce = os.getenv("ENFORCE_INTERNAL_SECRET", "false").lower() in ("true", "1", "yes")
+    if enforce or x_internal_secret is not None:
+        if not x_internal_secret or not hmac.compare_digest(x_internal_secret, expected):
+            raise UnauthorizedError("invalid or missing internal gateway secret")
 
 
 @dataclass(frozen=True)
@@ -30,6 +51,7 @@ async def get_current_user(
     x_user_id: str | None = Header(default=None),
     x_user_roles: str | None = Header(default=None),
     x_user_tier: str | None = Header(default=None),
+    _secret_check: None = Depends(verify_internal_secret),
 ) -> UserContext:
     if not x_user_id:
         raise UnauthorizedError("missing authenticated user context")
@@ -41,6 +63,7 @@ async def get_optional_user(
     x_user_id: str | None = Header(default=None),
     x_user_roles: str | None = Header(default=None),
     x_user_tier: str | None = Header(default=None),
+    _secret_check: None = Depends(verify_internal_secret),
 ) -> UserContext | None:
     if not x_user_id:
         return None

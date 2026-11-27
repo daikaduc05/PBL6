@@ -1,6 +1,8 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
+from pbl6_common.deps import require_role
+from pbl6_common.errors import NotFoundError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from content.deps import get_db
@@ -21,7 +23,12 @@ def get_category_service(session: AsyncSession = Depends(get_db)) -> CategorySer
     return CategoryService(repo)
 
 
-@router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=CategoryResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_role("ADMIN", "EDITOR"))],
+)
 async def create_category(
     data: CategoryCreate, service: CategoryService = Depends(get_category_service)
 ):
@@ -43,11 +50,15 @@ async def get_category(
 ):
     category = await service.get_category(category_id)
     if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise NotFoundError("Không tìm thấy danh mục.")
     return category
 
 
-@router.put("/{category_id}", response_model=CategoryResponse)
+@router.put(
+    "/{category_id}",
+    response_model=CategoryResponse,
+    dependencies=[Depends(require_role("ADMIN", "EDITOR"))],
+)
 async def update_category(
     category_id: uuid.UUID,
     data: CategoryUpdate,
@@ -57,7 +68,11 @@ async def update_category(
     return category
 
 
-@router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{category_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_role("ADMIN", "EDITOR"))],
+)
 async def delete_category(
     category_id: uuid.UUID, service: CategoryService = Depends(get_category_service)
 ):

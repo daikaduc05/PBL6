@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import HTTPException, status
 from learning.models.comment import Comment
 from learning.repositories.comment_repository import CommentRepository
 from learning.schemas.comment import CommentCreate, CommentResponse
+from pbl6_common.errors import AppError, ForbiddenError, NotFoundError, ValidationError
 
 
 class CommentService:
@@ -42,23 +42,14 @@ class CommentService:
     ) -> CommentResponse:
         content = data.content.strip()
         if not content:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Nội dung bình luận không được để trống",
-            )
+            raise ValidationError("Nội dung bình luận không được để trống")
 
         if data.parent_id:
             parent = await self.repo.get_by_id(data.parent_id)
             if not parent:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Bình luận cha không tồn tại",
-                )
+                raise NotFoundError("Bình luận cha không tồn tại")
             if parent.lesson_id != lesson_id:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Bình luận cha không thuộc bài học này",
-                )
+                raise AppError("Bình luận cha không thuộc bài học này")
 
         comment = Comment(
             lesson_id=lesson_id,
@@ -80,19 +71,13 @@ class CommentService:
     async def delete_comment(self, comment_id: UUID, user_id: UUID, roles: list[str]) -> None:
         comment = await self.repo.get_by_id(comment_id)
         if not comment:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Bình luận không tồn tại",
-            )
+            raise NotFoundError("Bình luận không tồn tại")
 
         is_owner = str(comment.user_id) == str(user_id)
         normalized_roles = [r.lower() for r in roles]
         is_admin = "admin" in normalized_roles or "editor" in normalized_roles
 
         if not (is_owner or is_admin):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Không có quyền xóa bình luận này",
-            )
+            raise ForbiddenError("Không có quyền xóa bình luận này")
 
         await self.repo.delete(comment)

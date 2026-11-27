@@ -21,3 +21,8 @@ class BaseServiceSettings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 15
     refresh_token_days: int = 7
+
+    # Shared secret between BFF Gateway and internal microservices to prevent
+    # header spoofing (X-User-Roles: ADMIN) if a service port is reached directly.
+    internal_api_secret: str = "pbl6-internal-gateway-secret"
+    enforce_internal_secret: bool = False

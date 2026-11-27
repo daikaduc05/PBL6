@@ -10,16 +10,16 @@ from content.config import get_settings
 from content.repositories.category_repository import CategoryRepository
 from content.repositories.lesson_repository import LessonRepository
 from content.repositories.media_repository import MediaRepository
+from content.repositories.outbox_repository import OutboxRepository
 from content.services.category_service import CategoryService
 from content.services.lesson_service import LessonService
 from content.services.media_service import MediaService
 
 settings = get_settings()
 engine = make_engine(settings.database_url)
-_session_factory = make_session_factory(engine)
+session_factory = make_session_factory(engine)
+_session_factory = session_factory
 get_db = make_get_db(_session_factory)
-# TODO: Uncomment when T04 (RabbitMQ) is implemented
-# _publisher = EventPublisher(settings.rabbitmq_url, "pbl6.events", "content-service")
 
 
 async def get_category_repo(db: AsyncSession = Depends(get_db)) -> CategoryRepository:
@@ -36,11 +36,16 @@ async def get_lesson_repo(db: AsyncSession = Depends(get_db)) -> LessonRepositor
     return LessonRepository(db)
 
 
+async def get_outbox_repo(db: AsyncSession = Depends(get_db)) -> OutboxRepository:
+    return OutboxRepository(db)
+
+
 async def get_lesson_service(
     lesson_repo: LessonRepository = Depends(get_lesson_repo),
     category_repo: CategoryRepository = Depends(get_category_repo),
+    outbox_repo: OutboxRepository = Depends(get_outbox_repo),
 ) -> LessonService:
-    return LessonService(lesson_repo, category_repo)
+    return LessonService(lesson_repo, category_repo, outbox_repo=outbox_repo)
 
 
 async def get_media_repo(db: AsyncSession = Depends(get_db)) -> MediaRepository:

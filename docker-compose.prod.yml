@@ -28,13 +28,15 @@ services:
       dockerfile: services/account/Dockerfile
     container_name: pbl6-account-service
     restart: always
-    ports:
-      - "8001:8001"
+    expose:
+      - "8001"
     env_file:
       - ./Backend/services/account/.env
     environment:
       - REDIS_URL=redis://redis:6379/0
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-pbl6-internal-gateway-secret}
+      - ENFORCE_INTERNAL_SECRET=true
     depends_on:
       - redis
       - rabbitmq
@@ -47,13 +49,15 @@ services:
       dockerfile: services/content/Dockerfile
     container_name: pbl6-content-service
     restart: always
-    ports:
-      - "8002:8002"
+    expose:
+      - "8002"
     env_file:
       - ./Backend/services/content/.env
     environment:
       - REDIS_URL=redis://redis:6379/0
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-pbl6-internal-gateway-secret}
+      - ENFORCE_INTERNAL_SECRET=true
     depends_on:
       - redis
     networks:
@@ -65,12 +69,14 @@ services:
       dockerfile: services/learning/Dockerfile
     container_name: pbl6-learning-service
     restart: always
-    ports:
-      - "8003:8003"
+    expose:
+      - "8003"
     env_file:
       - ./Backend/services/learning/.env
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-pbl6-internal-gateway-secret}
+      - ENFORCE_INTERNAL_SECRET=true
     depends_on:
       - redis
     networks:
@@ -82,13 +88,15 @@ services:
       dockerfile: services/payment/Dockerfile
     container_name: pbl6-payment-service
     restart: always
-    ports:
-      - "8004:8004"
+    expose:
+      - "8004"
     env_file:
       - ./Backend/services/payment/.env
     environment:
       - REDIS_URL=redis://redis:6379/0
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-pbl6-internal-gateway-secret}
+      - ENFORCE_INTERNAL_SECRET=true
     depends_on:
       - redis
       - rabbitmq
@@ -101,13 +109,17 @@ services:
       dockerfile: services/notification/Dockerfile
     container_name: pbl6-notification-service
     restart: always
-    ports:
-      - "8005:8005"
+    expose:
+      - "8005"
     env_file:
       - ./Backend/services/notification/.env
     environment:
       - REDIS_URL=redis://redis:6379/0
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - ACCOUNT_SERVICE_URL=http://account-service:8001
+      - LEARNING_SERVICE_URL=http://learning-service:8003
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-pbl6-internal-gateway-secret}
+      - ENFORCE_INTERNAL_SECRET=true
     depends_on:
       - redis
       - rabbitmq
@@ -128,6 +140,7 @@ services:
       - LEARNING_SERVICE_URL=http://learning-service:8003/api/v1
       - PAYMENT_SERVICE_URL=http://payment-service:8004/api/v1
       - NOTIFICATION_SERVICE_URL=http://notification-service:8005/api/v1
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-pbl6-internal-gateway-secret}
       - SESSION_COOKIE_NAME=pbl6_session
       - SESSION_JWT_SECRET=change-me-to-a-random-32-byte-string
       - SESSION_JWT_ALGORITHM=HS256

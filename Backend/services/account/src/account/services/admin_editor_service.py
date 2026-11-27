@@ -78,12 +78,21 @@ class AdminEditorService:
                 "account.locked",
                 {
                     "user_id": str(user_id),
+                    "email": user.email,
+                    "full_name": user.full_name,
                     "locked_by": str(locked_by) if locked_by else None,
                     "reason": reason,
                 },
             )
         elif status != "LOCKED" and previous_status == "LOCKED":
-            await self._publisher.publish("account.unlocked", {"user_id": str(user_id)})
+            await self._publisher.publish(
+                "account.unlocked",
+                {
+                    "user_id": str(user_id),
+                    "email": user.email,
+                    "full_name": user.full_name,
+                },
+            )
 
         return user
 

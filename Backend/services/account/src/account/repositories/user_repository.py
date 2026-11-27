@@ -85,3 +85,9 @@ class UserRepository:
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def list_active_users(self) -> list[User]:
+        """Returns all active, non-deleted users for internal cross-service queries."""
+        stmt = select(User).where(User.status == "ACTIVE", User.deleted_at.is_(None))
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())

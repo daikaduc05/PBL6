@@ -51,3 +51,11 @@ class CategoryRepository:
             select(Category).where(Category.parent_id == parent_id)
         )
         return list(result.scalars().all())
+
+    async def has_lessons(self, category_id: uuid.UUID) -> bool:
+        from content.models.lesson import Lesson
+
+        result = await self._session.execute(
+            select(Lesson.id).where(Lesson.category_id == category_id).limit(1)
+        )
+        return result.scalars().first() is not None

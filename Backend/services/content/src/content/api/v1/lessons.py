@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 from pbl6_common.deps import UserContext, get_optional_user, require_role
+from pbl6_common.errors import NotFoundError
 from pydantic import BaseModel
 
 from content.deps import get_lesson_service
@@ -66,9 +67,7 @@ async def get_lesson(
 ):
     lesson = await service.get_lesson(lesson_id)
     if not lesson:
-        from fastapi import HTTPException
-
-        raise HTTPException(status_code=404, detail="Không tìm thấy bài học.")
+        raise NotFoundError("Không tìm thấy bài học.")
 
     resp = LessonResponse.model_validate(lesson)
     if resp.access == LessonAccess.VIP and (not user or user.tier != "vip"):

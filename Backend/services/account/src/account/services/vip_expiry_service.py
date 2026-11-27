@@ -13,13 +13,20 @@ invariant (account.users.vip_expired_at: "Null when not VIP").
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Protocol
 
 from account.events.publisher import EventPublisherProtocol
-from account.repositories.user_repository import UserRepository
+from account.models.user import User
+
+
+class ExpiredVipUsersProtocol(Protocol):
+    async def list_expired_vip(self, *, now: datetime, limit: int = 500) -> list[User]: ...
+
+    async def save(self, user: User) -> None: ...
 
 
 class VipExpiryService:
-    def __init__(self, users: UserRepository, publisher: EventPublisherProtocol):
+    def __init__(self, users: ExpiredVipUsersProtocol, publisher: EventPublisherProtocol):
         self._users = users
         self._publisher = publisher
 
@@ -39,6 +46,8 @@ class VipExpiryService:
                 "vip.expired",
                 {
                     "user_id": str(user.id),
+                    "email": user.email,
+                    "full_name": user.full_name,
                     "expired_at": expired_at.isoformat() if expired_at else now.isoformat(),
                 },
             )

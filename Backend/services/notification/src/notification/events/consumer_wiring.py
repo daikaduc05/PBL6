@@ -22,14 +22,12 @@ from notification.services.email_service import EmailService
 logger = logging.getLogger(__name__)
 
 QUEUE_NAME = "notification.events"
-# lesson.published stays unbound for now: content has no publisher yet, and
-# "notify whom?" (every user? followers of the category?) is an undecided
-# fan-out question — binding it today would just grow an unread queue.
 ROUTING_KEYS = [
     "payment.succeeded",
     "vip.expired",
     "account.locked",
     "account.unlocked",
+    "lesson.published",
 ]
 
 
