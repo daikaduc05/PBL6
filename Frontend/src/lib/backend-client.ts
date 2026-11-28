@@ -8,6 +8,8 @@ const CONTENT_BASE = process.env.CONTENT_SERVICE_URL ?? "http://localhost:8002/a
 const LEARNING_BASE = process.env.LEARNING_SERVICE_URL ?? "http://localhost:8003/api/v1";
 const PAYMENT_BASE = process.env.PAYMENT_SERVICE_URL ?? "http://localhost:8004/api/v1";
 const NOTIFICATION_BASE = process.env.NOTIFICATION_SERVICE_URL ?? "http://localhost:8005/api/v1";
+const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET ?? "pbl6-internal-gateway-secret";
+const BACKEND_TIMEOUT_MS = Number(process.env.BACKEND_TIMEOUT_MS ?? "8000");
 
 export class BackendError extends Error {
   constructor(
@@ -33,7 +35,10 @@ interface CallOptions {
  * so THEY are what forwards X-User-Id/X-User-Roles (backend.md §7),
  * exactly like a gateway would. Never call this from a Client Component. */
 async function call<T>(base: string, path: string, opts: CallOptions = {}): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-Internal-Secret": INTERNAL_API_SECRET,
+  };
   if (opts.user) {
     headers["X-User-Id"] = opts.user.userId;
     headers["X-User-Roles"] = opts.user.roles.join(",");
@@ -43,12 +48,29 @@ async function call<T>(base: string, path: string, opts: CallOptions = {}): Prom
     headers.Authorization = `Bearer ${opts.accessToken}`;
   }
 
-  const res = await fetch(`${base}${path}`, {
-    method: opts.method ?? "GET",
-    headers,
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${base}${path}`, {
+      method: opts.method ?? "GET",
+      headers,
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      cache: "no-store",
+      signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
+    });
+  } catch (err) {
+    if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
+      throw new BackendError(
+        504,
+        "GATEWAY_TIMEOUT",
+        "Dịch vụ phản hồi quá thời gian quy định. Vui lòng thử lại sau.",
+      );
+    }
+    throw new BackendError(
+      503,
+      "SERVICE_UNAVAILABLE",
+      "Không thể kết nối tới dịch vụ xử lý. Vui lòng thử lại sau.",
+    );
+  }
 
   if (!res.ok) {
     let parsed: ApiError | null = null;

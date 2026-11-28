@@ -145,7 +145,13 @@ async def test_set_status_to_locked_publishes_account_locked():
     assert publisher.published == [
         (
             "account.locked",
-            {"user_id": str(student.id), "locked_by": str(admin_id), "reason": "spam reports"},
+            {
+                "user_id": str(student.id),
+                "email": student.email,
+                "full_name": student.full_name,
+                "locked_by": str(admin_id),
+                "reason": "spam reports",
+            },
         )
     ]
 
@@ -157,7 +163,16 @@ async def test_set_status_away_from_locked_publishes_account_unlocked():
 
     await service.set_status(student.id, status="ACTIVE")
 
-    assert publisher.published == [("account.unlocked", {"user_id": str(student.id)})]
+    assert publisher.published == [
+        (
+            "account.unlocked",
+            {
+                "user_id": str(student.id),
+                "email": student.email,
+                "full_name": student.full_name,
+            },
+        )
+    ]
 
 
 @pytest.mark.asyncio

@@ -49,6 +49,8 @@ class ProcessedLedger(Protocol):
 class UserDirectory(Protocol):
     async def user(self, user_id: uuid.UUID) -> ActiveUser | None: ...
 
+    async def active_users(self) -> list[ActiveUser]: ...
+
 
 # --- payload shapes ---------------------------------------------------------
 # The envelope's own five fields are validated by pbl6_common before the
@@ -62,20 +64,34 @@ class PaymentSucceededData(BaseModel):
     plan_id: str
     amount_vnd: float
     duration_days: int
+    email: str | None = None
+    full_name: str | None = None
 
 
 class VipExpiredData(BaseModel):
     user_id: uuid.UUID
     expired_at: datetime
+    email: str | None = None
+    full_name: str | None = None
 
 
 class AccountLockedData(BaseModel):
     user_id: uuid.UUID
     reason: str | None = None
+    email: str | None = None
+    full_name: str | None = None
 
 
 class AccountUnlockedData(BaseModel):
     user_id: uuid.UUID
+    email: str | None = None
+    full_name: str | None = None
+
+
+class LessonPublishedData(BaseModel):
+    lesson_id: uuid.UUID
+    title: str
+    category_id: uuid.UUID | None = None
 
 
 class MalformedEventError(Exception):
@@ -157,6 +173,8 @@ class EventHandlerService:
                 return await self._account_locked(AccountLockedData(**data))
             case "account.unlocked":
                 return await self._account_unlocked(AccountUnlockedData(**data))
+            case "lesson.published":
+                return await self._lesson_published(LessonPublishedData(**data))
             case _:
                 return _UNKNOWN
 
@@ -177,11 +195,13 @@ class EventHandlerService:
             type=MessageType.PAYMENT_SUCCEEDED,
         )
 
-        user = await self._users.user(data.user_id)
+        if data.email and data.full_name:
+            user: ActiveUser | None = ActiveUser(
+                id=data.user_id, email=data.email, full_name=data.full_name
+            )
+        else:
+            user = await self._users.user(data.user_id)
         if user is None:
-            # The in-app row above still stands — it has no FK and the user_id
-            # may simply not be visible to us (deleted since). Only the email
-            # is impossible without an address.
             logger.warning("events: no account row for %s, skipping email", data.user_id)
             return None
         return EmailPlan(
@@ -196,9 +216,6 @@ class EventHandlerService:
         )
 
     async def _vip_expired(self, data: VipExpiredData) -> EmailPlan | None:
-        # expired_at arrives in UTC (timestamptz through the relay); shown to
-        # a person it must be their wall clock or "hết hạn lúc 17:00" reads as
-        # seven hours early.
         local = data.expired_at.astimezone(self._tz)
         expired_on = f"{local:%H:%M ngày %d/%m/%Y}"
         await self._messages.create(
@@ -211,9 +228,12 @@ class EventHandlerService:
             type=MessageType.VIP_EXPIRED,
         )
 
-        # Email matters most for exactly this notice: a lapsed user has little
-        # reason to open the app, so in-app alone mostly talks to nobody.
-        user = await self._users.user(data.user_id)
+        if data.email and data.full_name:
+            user: ActiveUser | None = ActiveUser(
+                id=data.user_id, email=data.email, full_name=data.full_name
+            )
+        else:
+            user = await self._users.user(data.user_id)
         if user is None:
             logger.warning("events: no account row for %s, skipping email", data.user_id)
             return None
@@ -247,6 +267,18 @@ class EventHandlerService:
             content="Tài khoản của bạn đã hoạt động trở lại. Chào mừng bạn quay lại học!",
             type=MessageType.ACCOUNT_UNLOCKED,
         )
+        return None
+
+    async def _lesson_published(self, data: LessonPublishedData) -> EmailPlan | None:
+        active_users_fn = getattr(self._users, "active_users", None)
+        recipients = await active_users_fn() if callable(active_users_fn) else []
+        for user in recipients:
+            await self._messages.create(
+                user_id=user.id,
+                title="Bài học mới vừa được xuất bản",
+                content=f"Bài học '{data.title}' đã sẵn sàng. Vào khám phá ngay nhé!",
+                type=MessageType.LESSON_PUBLISHED,
+            )
         return None
 
 

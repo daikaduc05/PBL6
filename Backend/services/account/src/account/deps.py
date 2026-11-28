@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from account.config import get_settings
 from account.email import SmtpEmailSender
 from account.events.publisher import RabbitEventPublisher
+from account.repositories.outbox_repository import OutboxRepository
 from account.repositories.password_reset_repository import PasswordResetRepository
 from account.repositories.user_repository import UserRepository
 from account.services.admin_editor_service import AdminEditorService
@@ -53,8 +54,10 @@ async def get_redis() -> AsyncGenerator[Redis, None]:
     yield _redis
 
 
-def get_event_publisher() -> RabbitEventPublisher:
-    return RabbitEventPublisher(_exchange)
+def get_event_publisher(
+    session: AsyncSession = Depends(get_db),
+) -> RabbitEventPublisher:
+    return RabbitEventPublisher(_exchange, outbox=OutboxRepository(session))
 
 
 def get_auth_service(

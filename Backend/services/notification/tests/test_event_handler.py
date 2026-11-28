@@ -49,6 +49,9 @@ class FakeUsers:
     async def user(self, user_id):
         return self._known.get(user_id)
 
+    async def active_users(self) -> list[ActiveUser]:
+        return list(self._known.values())
+
 
 def build(
     *, seen: set[uuid.UUID] | None = None, users: list[ActiveUser] | None = None
@@ -192,6 +195,28 @@ async def test_account_unlocked_translates():
 
     assert messages.created[0]["type"] == MessageType.ACCOUNT_UNLOCKED
     assert plan is None  # in-app only, no email
+
+
+async def test_lesson_published_notifies_all_active_users():
+    u2 = ActiveUser(id=uuid.uuid4(), email="lan@pbl6.test", full_name="Lan")
+    service, messages, _ = build(users=[USER, u2])
+
+    plan = await service.apply(
+        envelope(
+            "lesson.published",
+            {
+                "lesson_id": str(uuid.uuid4()),
+                "title": "Thì hiện tại hoàn thành",
+                "category_id": str(uuid.uuid4()),
+            },
+        )
+    )
+
+    assert len(messages.created) == 2
+    assert {m["user_id"] for m in messages.created} == {USER.id, u2.id}
+    assert all(m["type"] == MessageType.LESSON_PUBLISHED for m in messages.created)
+    assert "Thì hiện tại hoàn thành" in messages.created[0]["content"]
+    assert plan is None
 
 
 # --------------------------------------------------------------------------
