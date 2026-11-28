@@ -2,15 +2,15 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
     ports:
-      - "5672:5672"   # AMQP
-      - "15672:15672"  # management UI (guest/guest)
+      - "127.0.0.1:5672:5672"   # AMQP (loopback only)
+      - "127.0.0.1:15672:15672"  # management UI (loopback only)
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
@@ -20,8 +20,8 @@ services:
   mailpit:
     image: axllent/mailpit:latest
     ports:
-      - "1025:1025" # SMTP — services point EMAIL_PROVIDER=smtp here
-      - "8025:8025" # web UI
+      - "127.0.0.1:1025:1025" # SMTP — services point EMAIL_PROVIDER=smtp here
+      - "127.0.0.1:8025:8025" # web UI
     environment:
       MP_MAX_MESSAGES: 500
 
