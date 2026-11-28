@@ -8,7 +8,9 @@ const CONTENT_BASE = process.env.CONTENT_SERVICE_URL ?? "http://localhost:8002/a
 const LEARNING_BASE = process.env.LEARNING_SERVICE_URL ?? "http://localhost:8003/api/v1";
 const PAYMENT_BASE = process.env.PAYMENT_SERVICE_URL ?? "http://localhost:8004/api/v1";
 const NOTIFICATION_BASE = process.env.NOTIFICATION_SERVICE_URL ?? "http://localhost:8005/api/v1";
-const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET ?? "pbl6-internal-gateway-secret";
+const INTERNAL_API_SECRET =
+  process.env.INTERNAL_API_SECRET ??
+  (process.env.NODE_ENV === "production" ? "" : "pbl6-internal-gateway-secret");
 const BACKEND_TIMEOUT_MS = Number(process.env.BACKEND_TIMEOUT_MS ?? "8000");
 
 export class BackendError extends Error {

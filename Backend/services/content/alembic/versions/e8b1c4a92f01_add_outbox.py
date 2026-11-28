@@ -50,4 +50,3 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_index("content_outbox_unpublished_idx", table_name="outbox", schema="content")
     op.drop_table("outbox", schema="content")
-

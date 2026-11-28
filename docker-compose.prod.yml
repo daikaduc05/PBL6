@@ -3,8 +3,8 @@ services:
     image: redis:7-alpine
     container_name: pbl6-redis
     restart: always
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     volumes:
       - redis_data:/data
     networks:
@@ -14,9 +14,12 @@ services:
     image: rabbitmq:3-management-alpine
     container_name: pbl6-rabbitmq
     restart: always
-    ports:
-      - "5672:5672"
-      - "15672:15672"
+    expose:
+      - "5672"
+      - "15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-pbl6_mq}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS:?RABBITMQ_PASS must be set in production}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
@@ -33,9 +36,10 @@ services:
     env_file:
       - ./Backend/services/account/.env
     environment:
+      - ENV=production
       - REDIS_URL=redis://redis:6379/0
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-pbl6-internal-gateway-secret}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-pbl6_mq}:${RABBITMQ_PASS}@rabbitmq:5672/
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:?INTERNAL_API_SECRET must be set in production}
       - ENFORCE_INTERNAL_SECRET=true
     depends_on:
       - redis
@@ -54,12 +58,14 @@ services:
     env_file:
       - ./Backend/services/content/.env
     environment:
+      - ENV=production
       - REDIS_URL=redis://redis:6379/0
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-pbl6-internal-gateway-secret}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-pbl6_mq}:${RABBITMQ_PASS}@rabbitmq:5672/
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:?INTERNAL_API_SECRET must be set in production}
       - ENFORCE_INTERNAL_SECRET=true
     depends_on:
       - redis
+      - rabbitmq
     networks:
       - pbl6-network
 
@@ -74,8 +80,9 @@ services:
     env_file:
       - ./Backend/services/learning/.env
     environment:
+      - ENV=production
       - REDIS_URL=redis://redis:6379/0
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-pbl6-internal-gateway-secret}
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:?INTERNAL_API_SECRET must be set in production}
       - ENFORCE_INTERNAL_SECRET=true
     depends_on:
       - redis
@@ -90,12 +97,15 @@ services:
     restart: always
     expose:
       - "8004"
+    ports:
+      - "127.0.0.1:8004:8004"
     env_file:
       - ./Backend/services/payment/.env
     environment:
+      - ENV=production
       - REDIS_URL=redis://redis:6379/0
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-pbl6-internal-gateway-secret}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-pbl6_mq}:${RABBITMQ_PASS}@rabbitmq:5672/
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:?INTERNAL_API_SECRET must be set in production}
       - ENFORCE_INTERNAL_SECRET=true
     depends_on:
       - redis
@@ -114,11 +124,12 @@ services:
     env_file:
       - ./Backend/services/notification/.env
     environment:
+      - ENV=production
       - REDIS_URL=redis://redis:6379/0
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-pbl6_mq}:${RABBITMQ_PASS}@rabbitmq:5672/
       - ACCOUNT_SERVICE_URL=http://account-service:8001
       - LEARNING_SERVICE_URL=http://learning-service:8003
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-pbl6-internal-gateway-secret}
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:?INTERNAL_API_SECRET must be set in production}
       - ENFORCE_INTERNAL_SECRET=true
     depends_on:
       - redis
@@ -140,9 +151,9 @@ services:
       - LEARNING_SERVICE_URL=http://learning-service:8003/api/v1
       - PAYMENT_SERVICE_URL=http://payment-service:8004/api/v1
       - NOTIFICATION_SERVICE_URL=http://notification-service:8005/api/v1
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-pbl6-internal-gateway-secret}
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:?INTERNAL_API_SECRET must be set in production}
       - SESSION_COOKIE_NAME=pbl6_session
-      - SESSION_JWT_SECRET=change-me-to-a-random-32-byte-string
+      - SESSION_JWT_SECRET=${SESSION_JWT_SECRET:?SESSION_JWT_SECRET must be set in production}
       - SESSION_JWT_ALGORITHM=HS256
     depends_on:
       - account-service
@@ -153,6 +164,16 @@ services:
     networks:
       - pbl6-network
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: pbl6-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://payment-service:8004
+    depends_on:
+      - payment-service
+    networks:
+      - pbl6-network
+
 volumes:
   redis_data:
   rabbitmq_data:
@@ -160,4 +181,3 @@ volumes:
 networks:
   pbl6-network:
     driver: bridge
-

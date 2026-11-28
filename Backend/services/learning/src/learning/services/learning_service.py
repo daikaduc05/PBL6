@@ -38,7 +38,7 @@ class LearningService:
         )
 
     async def get_last_activities(
-        self, since: datetime | None = None, limit: int = 1000
+        self, since: datetime | None = None, limit: int | None = 1000
     ) -> LastActivityResponse:
         histories = await self.history_repo.get_last_activities(since=since, limit=limit)
         items = [
