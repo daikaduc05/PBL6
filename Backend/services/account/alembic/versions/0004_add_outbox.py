@@ -48,4 +48,3 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_index("account_outbox_unpublished_idx", table_name="outbox", schema="account")
     op.drop_table("outbox", schema="account")
-

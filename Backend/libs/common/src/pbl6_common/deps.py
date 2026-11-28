@@ -29,14 +29,27 @@ def verify_internal_secret(
     """Verifies the shared secret between the BFF Gateway / peer services and
     this microservice.
 
-    When `ENFORCE_INTERNAL_SECRET=true` (or when `X-Internal-Secret` header is
-    supplied), requests carrying a missing or mismatched secret are rejected
-    with 401 Unauthorized, preventing direct `X-User-Roles: ADMIN` spoofing.
+    When `ENFORCE_INTERNAL_SECRET=true` (or `ENV` is not in `("local", "test", "ci")`):
+    - Rejects startup/request if `INTERNAL_API_SECRET` is missing or still uses
+      the public default placeholder `"pbl6-internal-gateway-secret"`.
+    - Rejects any request whose `X-Internal-Secret` header is missing or does
+      not match `INTERNAL_API_SECRET`.
     """
-    expected = os.getenv("INTERNAL_API_SECRET", DEFAULT_INTERNAL_SECRET)
-    enforce = os.getenv("ENFORCE_INTERNAL_SECRET", "false").lower() in ("true", "1", "yes")
-    if enforce or x_internal_secret is not None:
+    env = os.getenv("ENV", "local").lower()
+    is_non_prod = env in ("local", "test", "testing", "ci", "dev", "development")
+    enforce = (
+        os.getenv("ENFORCE_INTERNAL_SECRET", "false").lower() in ("true", "1", "yes")
+        or not is_non_prod
+    )
+    expected = os.getenv("INTERNAL_API_SECRET", DEFAULT_INTERNAL_SECRET if is_non_prod else "")
+
+    if enforce:
+        if not expected or (not is_non_prod and expected == DEFAULT_INTERNAL_SECRET):
+            raise UnauthorizedError("internal gateway secret is not securely configured")
         if not x_internal_secret or not hmac.compare_digest(x_internal_secret, expected):
+            raise UnauthorizedError("invalid or missing internal gateway secret")
+    elif x_internal_secret is not None:
+        if not expected or not hmac.compare_digest(x_internal_secret, expected):
             raise UnauthorizedError("invalid or missing internal gateway secret")
 
 

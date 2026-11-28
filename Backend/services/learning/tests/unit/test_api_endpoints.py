@@ -93,7 +93,7 @@ class FakeHistoryRepository:
         return max(user_hists, key=lambda h: h.completed_at)
 
     async def get_last_activities(
-        self, since: datetime | None = None, limit: int = 1000
+        self, since: datetime | None = None, limit: int | None = 1000
     ) -> list[History]:
         results: dict[uuid.UUID, History] = {}
         for h in self._histories.values():
@@ -101,7 +101,8 @@ class FakeHistoryRepository:
                 continue
             if h.user_id not in results or results[h.user_id].completed_at < h.completed_at:
                 results[h.user_id] = h
-        return list(results.values())[:limit]
+        items = list(results.values())
+        return items[:limit] if limit is not None else items
 
 
 @pytest.fixture

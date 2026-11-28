@@ -60,7 +60,7 @@ class HistoryRepository:
         return result.scalar_one_or_none()
 
     async def get_last_activities(
-        self, since: datetime | None = None, limit: int = 1000
+        self, since: datetime | None = None, limit: int | None = 1000
     ) -> list[History]:
         query = (
             select(History)
@@ -69,7 +69,8 @@ class HistoryRepository:
         )
         if since is not None:
             query = query.where(History.completed_at >= since)
-        query = query.limit(limit)
+        if limit is not None:
+            query = query.limit(limit)
 
         result = await self.db.execute(query)
         return list(result.scalars().all())
